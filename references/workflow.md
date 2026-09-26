@@ -9,11 +9,12 @@ work can be resumed, reviewed or redirected.
 | 2 Digest | `brief.md` evidence bank | you can cite a source for every on-screen fact |
 | 3 Narrative | arc + key messages (in `brief.md`) | fits the length budget |
 | 4 Storyboard | `storyboard.json` | `validate-storyboard.mjs --plan-only`; user checkpoint |
-| 5 Design | `storyboard.style`, `style.css` | contrast/legibility (checked in gate 3) |
+| 5 Design | `storyboard.style`, `style.css`, `design.md` (preset) | contrast/legibility (gates 3, 3b) |
 | 6 Build | `scenes/*.js`, `lib/*.js`, `assets/` | lint + preview |
-| 7 QA | `qa/report.md`, contact sheets | `qa.mjs` passes + visual rubric |
-| 8 Render | `out/*.mp4` | `verify-output.mjs` |
-| 9 Deliver | file + note | — |
+| 7 Voice | `audio/` (clips, timing, captions, mix), retimed `storyboard.json` | `voiceover.mjs` 0 errors; timing read |
+| 8 QA | `qa/report.md`, contact sheets | `qa.mjs` passes (gates 1–4, 3b) + visual rubric |
+| 9 Render | `out/*.mp4` | `verify-output.mjs` |
+| 10 Deliver | file + captions + poster + note (`--deliver`) | — |
 
 ---
 
@@ -79,14 +80,23 @@ Write ≤ 5 key messages in order, then pick an arc.
 Rules of thumb: one idea per scene; 4–7 s per scene is the sweet spot; anything over ~12 s must keep
 moving (drift, sequential builds, camera); on-screen reading ≤ 3.2 words/s after a 1 s settle.
 
+**Narration budget** (Kokoro at speed 1.0 speaks ≈ 2.3–2.6 words/s; transitions and pads add
+~1 s per scene): 30 s ≈ 60–70 words · 60 s ≈ 120–140 · 3 min ≈ 380–420 · 5 min ≈ 620–700. Write
+the narration, synthesize, then trim — measured timing beats estimates. HyperFrames' story rules
+worth applying (`hyperframes-creative/references/story-spine.md`, `narration.md`): tension in the
+first 3 s, the value stated by the second beat, every visual traceable to a source line, Hook →
+Story → Proof → takeaway.
+
 ### Long-form projects
 
 - Keep a single storyboard up to ~5 min. Beyond that, split into chapter projects
   (`videos/<slug>/ch01-*`, …) sharing a `style` block and `lib/`; render each and concatenate:
   `ffmpeg -f concat -safe 0 -i list.txt -c copy full.mp4` (same resolution/fps/codec required).
 - Use `render.mjs --scene <id>` while iterating so you only re-render what changed.
-- Name beats consistently (`title`, `reveal`, `emphasis`, `exit`) so the voice-over phase can map
-  narration onto them.
+- Name beats consistently (`title`, `reveal`, `emphasis`, `exit`) and cue the ones tied to a
+  spoken word (`"cue": "text:<phrase>"`).
+- For long narrated videos, synthesize early (`voiceover.mjs`) — it is fast (≈ 10–20× real time
+  on a GPU) and the measured scene lengths settle the edit before you build every scene.
 
 ## 4 · Storyboard
 
@@ -95,37 +105,45 @@ See `storyboard-schema.md`. Write scenes in order; for each ask:
 - **Visual** — the catalog type that shows it most directly (`visual-catalog.md`). Text is the
   last resort, not the first.
 - **Beats** — the 2–4 moments where something changes. Space them ≥ 0.6 s apart.
-- **Transition** — `cut` within a thought, `fade` between thoughts, stronger moves (`wipe`,
-  `slide-*`, `iris`) at chapter boundaries. Keep transitions ≤ 0.7 s and use at most 2–3 kinds.
-- **Narration** — write the line a narrator *would* say, even with voice-over off. It forces
-  clarity and it's free input for the TTS phase.
+- **Transition** — `cut` within a thought, `blur-crossfade`/`fade` between thoughts, a stronger
+  move (`color-dip`, `staggered-blocks`, `push`) at chapter boundaries. Keep transitions ≤ 0.7 s
+  and use 2–3 kinds per video (`motion-design.md` § transitions).
+- **Narration** — the spoken line (`voiceover.md` § writing narration). Even for a silent video,
+  write it: it forces clarity. With voice-over, the narration sets the scene's length.
+- **Cues and SFX** — cue the beats that must land on a word; add an `sfx` only where a sound
+  helps the moment (2–4 per minute).
 
 Checkpoint table to show the user:
 
 ```
-#  id           s    purpose                              visual
-1  hook         4.5  pose the question                    kinetic-title
-2  scale        4.5  stakes: 175B parameters              stat
-…                                                         total 0:50.7
+#  id           s    purpose                              visual          narration (first words)
+1  hook         4.5  pose the question                    kinetic-title   "How does a model actually…"
+2  scale        4.5  stakes: 175B parameters              stat            "Modern models have…"
+…                                                         total 0:50.7    ~115 words
 ```
 
 ## 5 · Design system
 
-Set `storyboard.style` once: palette (bg, surface, ink, muted, line, accent, accent-2, accent-3,
-warn), fonts (bundled: Inter, JetBrains Mono, Source Serif 4; add others as local files), motion
-(`ease`, `base` duration, `exit` duration). See `motion-design.md` for choices that read as
-professional. Project-specific classes go in `style.css`, sized with `var(--u)`.
+Either apply a HyperFrames frame preset (`design.mjs --list`, then `--preset <name>`), which
+fills palette + fonts and copies the preset's `design.md`, or set `storyboard.style` by hand:
+palette (bg, surface, ink, muted, line, accent, accent-2, accent-3, warn), fonts (`sans`,
+`display`, `mono`, `serif`; bundled: Inter, JetBrains Mono, Source Serif 4; others as local files
+in `assets/fonts/`), motion (`ease`, `base` duration, `exit` duration). See `motion-design.md`
+for choices that read as professional. Project-specific classes go in `style.css`, sized with
+`var(--u)`.
 
 ## 6 · Build
 
 - Copy the closest scene from `examples/gradient-descent/scenes/` as a starting point.
 - Shared computation (datasets, functions, precomputed paths) → `lib/*.js` loaded via
   `storyboard.assets.scripts`, so several scenes can use the same numbers.
-- Build scene by scene with preview open (`?scene=<id>`), then run `lint.mjs` early and often.
+- Build scene by scene with preview open (`preview.mjs` → `?preview&scene=<id>`), then run
+  `lint.mjs` early and often. For motion technique, read the matching HyperFrames rule or
+  blueprint (`visual-catalog.md` § HyperFrames) and translate it (`hyperframes.md`).
 - Keep each scene file under ~120 lines; split visual subroutines into `lib/`.
 
-## 7 · QA → 8 · Render → 9 · Deliver
+## 7 · Voice → 8 · QA → 9 · Render → 10 · Deliver
 
-Covered in `validation.md` and `rendering.md`. The deliverable note should include: file(s) and
+Covered in `voiceover.md`, `validation.md` and `rendering.md`. The deliverable note should include: file(s) and
 where they are, duration/resolution/fps, the scene list, assumptions, illustrative content, and
 accepted warnings.

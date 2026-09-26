@@ -410,6 +410,8 @@
         var c = el('canvas', { class: 'vm-canvas' }, opts.parent || sEl);
         c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
         c.style.width = w + 'px'; c.style.height = h + 'px';
+        // Full-frame canvases are full-bleed by design; tell HyperFrames' layout check.
+        if (w === canvas.width && h === canvas.height) c.setAttribute('data-layout-allow-overflow', '');
         var g = c.getContext(opts.context || '2d', opts.contextOptions);
         if (g && g.setTransform) g.setTransform(dpr, 0, 0, dpr, 0, 0);
         return { el: c, g: g, width: w, height: h, dpr: dpr };

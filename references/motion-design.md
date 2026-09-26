@@ -27,6 +27,12 @@
 - ≤ 2 families per video (sans + mono or serif). Tabular numbers for anything that counts.
 - Line length ≤ ~40 characters for on-screen sentences; break manually at phrase boundaries.
 - Avoid pure white on pure black; the default palette uses #eef2f8 on #0b0f17.
+- HyperFrames' full-screen minimums (`hyperframes-creative/references/typography.md`): body ≥ 20 px,
+  headlines ≥ 60 px, data labels ≥ 16 px at 1080p (≥ 32/90/24 for phone feeds). Track display
+  text −0.02 to −0.05 em; on dark backgrounds add 0.05–0.1 line-height. Pair across categories
+  (sans + serif or sans + mono), never two similar sans faces. Text on screen for 3 s must be
+  readable in 2 s.
+- Headings use `--f-display` (a preset may set a separate display face); body uses `--f-sans`.
 
 ## Colour
 
@@ -47,16 +53,59 @@
 
 ## Transitions
 
-- `cut` inside a thought; `fade` between thoughts; `wipe/slide/iris` at chapter boundaries.
-  Use at most 2–3 kinds per video.
-- Continuity beats transitions: if the next scene reuses an element (a chart, a node), consider
-  keeping it in one scene and changing it in place.
+Built in (`vm.js`): `cut fade slide-left slide-up wipe iris zoom blur`. Ported from HyperFrames
+(`runtime/transitions.js`; source: `vendor/hyperframes/skills/hyperframes-animation/transitions/`):
+
+| Type | Energy | Feel | Options (`transition_in.*`) |
+|---|---|---|---|
+| `crossfade` | any | both scenes dissolve | — |
+| `blur-crossfade` | calm | **default for explainers**; hides background changes | — |
+| `focus-pull` | calm | rack focus: old defocuses, new arrives sharp | — |
+| `color-dip` | calm/medium | dip through a solid colour — a "new chapter" breath | `color` |
+| `push` | medium | both scenes travel together | `direction: left|right|up|down` |
+| `squeeze` | medium | old compresses to an edge, new expands | — |
+| `diamond-iris` | medium | new scene opens from a centre diamond | — |
+| `diagonal-split` | medium | old folds into the top-right corner | — |
+| `staggered-blocks` | medium/high | palette panels sweep across, swap while covered | `blocks` (1–6), `colors` |
+| `grid-dissolve` | medium | a cell grid ripples from the centre — reads as "data" | `cols`, `rows`, `color` |
+| `zoom-through` | high | fly through the old scene into the new | — |
+| `whip-pan` | high | fast horizontal smear | `direction: left|right` |
+
+- Pick **2–3 types for the whole video** and repeat them; repetition reads as professional
+  (HF `transitions/overview.md`). Typical explainer set: `blur-crossfade` within a chapter,
+  `color-dip` or `staggered-blocks` at chapter boundaries, `cut` for rapid lists.
+- Durations: snappy 0.2 · smooth 0.4 · gentle 0.6 · luxe 0.7 s. Energy should match the
+  narration's.
+- No exit animations right before a transition — the transition is the exit (except the last
+  scene).
+- Continuity beats transitions: if the next scene reuses an element (a chart, a node), keep it
+  in one scene and change it in place, or use `VMX.camera` to move within one diagram.
 
 ## Pacing by length
 
 - 15 s: one idea, 3–4 cuts, hook in the first second.
 - 60 s: hook ≤ 4 s, 6–10 scenes, one "reveal" moment around 60–70 % in.
 - 3+ min: chapter cards, recap, and a breather (full-bleed visual, minimal text) each minute.
+
+## Data in motion (HF `hyperframes-creative/references/data-in-motion.md`)
+
+- Pair every number with a visual that gives it weight (bar, ring, dot field) — a number alone is
+  a caption.
+- Keep one visual space for related stats (same axis, same scale) so change reads as change.
+- No pie charts, dual axes, dashboards of 6+ panels, legends when direct labels fit, or
+  decorative gridlines.
+- Build a chart in reading order: axes → baseline series → the series that matters, highlighted
+  last, with its label landing on the narration cue.
+
+## Design presets
+
+`node engine/scripts/design.mjs --list` shows the 13 HyperFrames frame presets; `--preset <name>`
+maps one into `storyboard.style` (palette + fonts, web fonts downloaded into `assets/fonts/`) and
+copies its `design.md` into the project — read its composition rules (card treatment, spacing,
+what to avoid). Explainer-friendly: **blue-professional** (cream + cobalt, Space Grotesk/Inter),
+**cobalt-grid** (paper + ink blue, Hanken Grotesk/Newsreader), **cartesian** (warm neutral, Inter +
+Playfair), **editorial-forest** (cream + forest green + pink, Source Serif/JetBrains Mono). The
+nine HF palettes (`hyperframes-creative/palettes/*.md`) are 5-colour rows to hand-pick from.
 
 ## House styles (starting points; copy into `storyboard.style`)
 

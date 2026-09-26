@@ -1,7 +1,8 @@
 # Validation
 
 Automated gates catch mechanical failures; the visual review catches whether the video is any
-good. Both are required. `qa.mjs` runs gates 1–4 and writes `qa/report.md`.
+good. Both are required. `qa.mjs` runs gates 1–4 (including 3b, HyperFrames' own check) and writes
+`qa/report.md`. Gate 5 runs on the rendered file.
 
 ## Gate 1 — storyboard (`validate-storyboard.mjs`)
 
@@ -11,6 +12,9 @@ density (> 1.4 × the words/s limit), missing scene files or assets.
 Warnings: missing meta goal/title/mode, missing purpose, unknown visual/transition types, very
 short/long scenes, tight reading density, long transitions, orphan scene files, total length off
 target, narration too dense when voice-over is enabled.
+Voice (once `voiceover.mjs` has run): `NARRATION_CUT` (error) — a scene is shorter than its
+narration needs (lead + clip + pad + next transition); `VOICE_STALE` — narration not synthesized;
+`MIX` — `audio/mix.wav` missing or older than storyboard.json.
 
 ## Gate 2 — lint (`lint.mjs`)
 
@@ -39,6 +43,15 @@ point 0.7 s before its end, and 0.8 s after each beat).
 - **Reading load** measured from text actually visible in each scene.
 - **Blank** frames, and a per-frame timing estimate for the render.
 
+## Gate 3b — HyperFrames check (`hf.mjs <p> check --json`)
+
+The same page through HyperFrames' own sweep: its linter (composition contract, font-face,
+transform conflicts), runtime errors, layout (`content_overlap`, `text_occluded`, `text_clipped`,
+`canvas_content_at_edge`, caption-zone), motion and WCAG contrast. Findings are mapped to scenes;
+overlap/occlusion inside a transition window is downgraded to info (two scenes share the frame
+there by design). Skipped with `--no-hf` or when the CLI is not installed. Mark intentional
+layering in scene code with `data-layout-allow-overlap` (or `-occlusion`, `-overflow`).
+
 ## Gate 4 — contact sheets (`snapshot.mjs`)
 
 Stills at ~12/52/92 % of every scene plus each beat, labelled, tiled into
@@ -55,6 +68,8 @@ Stills at ~12/52/92 % of every scene plus each beat, labelled, tiled into
 7. **Consistency** — palette, type, and motion vocabulary match the rest of the video.
 8. **Transitions** — mid-transition frames don't show two unrelated texts overlapping illegibly.
 9. **3D/fields** — camera frames the subject; nothing clipped by the frame edge; colours read.
+10. **Captions** — cards sit in the caption zone without covering labels or chart marks; each card is a readable phrase (no orphan words); on-screen text doesn't duplicate the caption word for word.
+11. **Voice sync** (read `audio/timing.json` / the SRT) — cued reveals land on their words; no scene has a long dead tail or starts talking before its transition finishes.
 
 Any ✗ → fix and re-run. Inspect a problem closely with `snapshot.mjs <p> --scene <id>` (6 stills)
 or `--times 12.3,12.6`. Record accepted "~" items in the hand-off.
@@ -62,7 +77,7 @@ or `--times 12.3,12.6`. Record accepted "~" items in the hand-off.
 ## Gate 5 — output (`verify-output.mjs`)
 
 ffprobe: resolution/aspect, fps, frame count vs. storyboard (skipped with `--partial`), pixel format,
-audio stream if voice-over is enabled. ffmpeg `blackdetect` (unintended black gaps) and
+audio stream if voice-over is enabled, audio length vs. timeline (`AUDIO_LENGTH`, ±0.1 s). ffmpeg `blackdetect` (unintended black gaps) and
 `freezedetect` (≥ 4 s without motion). Afterwards extract 2–3 frames from the final file and look
 at them — encoding problems (banding, blockiness) only show in the actual file.
 
@@ -77,5 +92,7 @@ at them — encoding problems (banding, blockiness) only show in the actual file
 | Numbers shown mid-count on the previous scene's transition | counter visible before it starts | `enter` the counter at its start beat |
 | 3D surface clipped or tiny | camera distance/fov/lookAt | adjust `camera`, `fov`, `orbit.distance`; check with `--scene` stills |
 | "Frozen" warning | long hold with no motion | `VMX.drift`, stagger builds later, or shorten the scene |
+| Caption covers a label | scene text in the caption zone (bottom ~16 %) | move it up, or `"captions": false` on that scene |
+| Reveal lands before/after its word | beat not cued, or cue phrase not in the narration | `cue: "text:<phrase>"` and re-run `voiceover.mjs` (check its CUE warnings) |
 | Render is slow | heavy canvas/WebGL recomputed every frame | cache on unchanged inputs (see `field`), lower `res`/`segments`, more `--workers` |
 | First frame missing an image | image not decoded before first seek | `await img.decode()` in an async builder |

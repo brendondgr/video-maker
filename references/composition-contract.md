@@ -4,9 +4,14 @@
 
 ```
 videos/<slug>/
-  index.html        boilerplate — import map + vm.css + style.css + boot.js (rarely edited)
+  index.html        boilerplate — import map + fonts.css + vm.css + style.css + boot.js; the
+                    HyperFrames root <div id="stage" data-composition-id="main" …> (attributes and
+                    the <audio id="vm-mix"> clip are synced from storyboard.json by the scripts)
   storyboard.json   the plan (see storyboard-schema.md)
   brief.md          intake + evidence bank
+  design.md         (optional) the applied design preset's spec — composition rules to follow
+  _engine           link to the engine (created by the scripts; git-ignored)
+  audio/            voiceover.mjs output: vo/ clips, timing.json, captions.*, voiceover.wav, mix.wav
   style.css         project classes (sizes in var(--u); no CSS animation)
   scenes/<id>.js    one builder per storyboard scene
   lib/*.js          shared code/data, listed in storyboard.assets.scripts
@@ -15,22 +20,27 @@ videos/<slug>/
   out/              renders (generated)
 ```
 
-The dev/render server serves the project at `/` and the engine at `/_engine/`, so projects can
+All engine paths are relative (`./_engine/…`), so the project renders under our server (engine at
+`/_engine/`), HyperFrames' server (through the `_engine` link) or any static server. Projects can
 live anywhere on disk.
 
 ## Boot sequence
 
 `boot.js` loads GSAP (+ SplitText, TextPlugin, DrawSVG, MorphSVG, MotionPath, CustomEase), D3,
-KaTeX, rough.js, the runtime and helpers → `storyboard.assets.scripts` → each scene file → then
-`VM.start()`: waits for fonts, runs every builder **in storyboard order**, pins each scene timeline
-to its duration, places it on the master timeline, applies transitions, and exposes:
+KaTeX, rough.js, the runtime, `transitions.js` and the helpers → `storyboard.assets.scripts` → each
+scene file → `audio/captions.json` (if captions are on) → `VM.start()`: waits for fonts, runs
+every builder **in storyboard order**, pins each scene timeline to its duration, places it on the
+master timeline, applies transitions, builds overlays (captions, `storyboard.overlays`), and
+exposes:
 
 ```js
 window.__vm = { ready, duration, fps, width, height, frames, scenes:[{id,start,end,duration}],
                 seek(t), warnings, errors, storyboard, timeline }
 ```
-The renderer and checks only ever call `__vm.seek(t)`. `window.__timelines.main` also holds the
-master timeline (HyperFrames-style) for external seek-based tools.
+Our renderer and checks call `__vm.seek(t)`. `window.__timelines.main` holds the same master
+timeline for HyperFrames, whose adapter seeks GSAP directly; scene visibility and `onFrame` run
+from the master's `onUpdate`, so both paths produce identical frames. Render mode is the default;
+our scrubber UI mounts only with `?preview`.
 
 ## Scene builder
 
@@ -97,6 +107,14 @@ Science & media (`helpers/science.js`)
 - `sketch(ctx, svg)` → rough.js generator · `circle(ctx, elOrBox, { at, color, pad })`
 - `kenBurns(ctx, img, { from, to })` · `layoutBox(ctx, el)`
 
+Figures (`helpers/figures.js`, adapted from HyperFrames motion rules)
+- `hubSpokes(ctx, { hub, spokes:[…], cx, cy, radius, at, stagger, startAngle, linkColor })` → `{ hub, nodes, links, point(i) }`
+- `cycle(ctx, { labels:[…], cx, cy, radius, at, stagger, color, gap })` → `{ nodes, arrows }` — stages on a ring with curved arrows
+- `camera(ctx, wrap, [{ at, duration, focus:[x,y] | element, scale, ease }, …])` — pan/zoom a full-frame wrapper so `focus` is centred
+- `ring(ctx, parent, { value, max, at, duration, size, color, label, format, suffix })` — progress ring + counter
+- `pulse(ctx, el, { at, scale, color })` — one emphasis beat (pair with a narration `cue`)
+- `.vm-node` (diagram chip) is centred on its point with GSAP `xPercent/yPercent` — don't add CSS transforms to it
+
 3D (`helpers/three.js`) — build must be `async`
 - `await scene3d(ctx, { camera:[x,y,z], lookAt, fov, background })` → `{ THREE, scene, camera, orbit, onFrame }`; tween `orbit.angle/elevation/distance`
 - `surface(THREE, (x, z, p) => y, { size, segments, range, colormap })` → `{ mesh, update(p) }`
@@ -120,10 +138,33 @@ classes in `style.css`. Text that intentionally bleeds outside the safe area: ad
   `video.currentTime = localT` in `onFrame` and accept slower renders.
 - Maps: vendor GeoJSON/TopoJSON into `assets/`, `await fetch()` it in an async builder, draw with `d3.geoPath`.
 
+## Overlays (whole-video layers)
+
+```js
+VM.overlay('progress', { build(ctx, opts) {        // ctx.tl spans the whole video (time 0 = video start)
+  const bar = ctx.add('div', { class: 'my-progress' });
+  ctx.tl.fromTo(bar, { scaleX: 0 }, { scaleX: 1, duration: ctx.duration, ease: 'none', transformOrigin: '0 50%' }, 0);
+} });
+```
+Enable with `"overlays": ["progress"]` (or `{ "name": "progress", …options }`) in storyboard.json.
+Overlays sit above every scene (z ≥ 1000). The built-in `captions` overlay is enabled by
+`audio.captions.enabled` and fed `audio/captions.json`.
+
+## Transitions
+
+`VM.transition(name, (tl, inEl, at, dur, ease, outEl, spec) => { … })`: `tl` is the master
+timeline, `inEl`/`outEl` the incoming/outgoing scene sections, `at` the moment the incoming scene
+starts (it overlaps the outgoing one by `dur`), `spec` the storyboard `transition_in` object (for
+options such as `direction`, `color`). Use `fromTo` with explicit start values and
+`immediateRender: false`; put any cover layer in `inEl.parentNode` and hide it outside
+`[at, at+dur]`. See `engine/runtime/transitions.js` and the table in `motion-design.md`.
+
 ## Extending the runtime
 
 - New helper: add `engine/runtime/helpers/<name>.js` (IIFE that attaches to `VM.helpers`), append it
-  to `LIBS` in `boot.js`, document it here, add a catalog type if it's a new visual.
-- New transition: `VM.transition('name', (masterTl, sceneEl, at, dur, ease) => { masterTl.fromTo(sceneEl, …, at) })`.
+  to `LIBS` in `boot.js`, document it here, add a catalog type if it's a new visual. Porting a
+  HyperFrames rule: keep its GSAP, swap selectors for element refs and `T` for `ctx.at()`, and name
+  the source file in a comment (Apache-2.0 attribution).
+- New transition or overlay: see the two sections above.
 - Anything seekable works: GSAP-driven Lottie (`goToAndStop(frame, true)` in `onFrame`), canvas
   libraries, WebGL — as long as the picture is a pure function of time.

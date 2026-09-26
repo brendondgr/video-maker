@@ -19,7 +19,11 @@
     "fonts": { "sans": "'Inter Variable'", "mono": "'JetBrains Mono Variable'", "serif": "'Source Serif 4 Variable'" },
     "motion": { "ease": "power3.out", "base": 0.7, "exit": 0.45 }
   },
-  "audio": { "voiceover": { "enabled": false }, "music": null },
+  "audio": {
+    "voiceover": { "enabled": false, "voice": "af_heart", "speed": 1.0, "retime": "fit" },
+    "captions": { "enabled": false, "style": "clean" },
+    "music": null
+  },
   "rules": { "max_words_per_second": 3.2, "min_scene_duration": 1.5, "max_scene_duration": 20 },
   "assets": { "scripts": [] },
   "scenes": [

@@ -117,14 +117,19 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
       (whisper.cpp, Docker)
 - [x] `doctor.mjs` reports TTS + HyperFrames status (`--tts` runs a timed synthesis)
 
-### Phase 7 — Deliverables: Co-Scientist (Nature 2026, doi:10.1038/s41586-026-10644-y)
-- [ ] 30 s — one message: a multi-agent AI that generates, debates and evolves hypotheses, and
-      lab-validated them
-- [ ] 60 s — how it works (agents + tournament) + the three validations
-- [ ] 5 min — chapters: problem · architecture · tournament/Elo scaling · expert evaluation ·
-      AML · liver fibrosis · AMR · limitations · outlook
-- [ ] Each: narrated (kokoro-tts), captioned, QA-passing, 1080p30 MP4 + SRT, delivered to
-      `~/Videos/CustomSkill/` via `render.mjs --deliver`
+### Phase 7 — Skill rewrite
+- [x] `SKILL.md` rewritten as one workflow: intake → brief → storyboard (narration first) → design →
+      build → voice → QA (gates 1–4 + 3b) → render (vm | hf, 1080p/4K) → verify → deliver
+- [x] References updated: workflow, storyboard-schema, composition-contract, visual-catalog
+      (HF blueprints/rules → helpers), motion-design (transitions, typography, data-in-motion,
+      presets), validation (gate 3b, voice gates, rubric items 10–11), rendering (engines,
+      resolution policy, `--deliver`); new `voiceover.md`, `hyperframes.md`, `install.md`;
+      `voiceover-roadmap.md` retired
+- [x] `new-project.mjs --voice --captions --design`; template storyboard carries audio defaults
+- [x] Example still passes every gate (0 errors, 0 warnings)
+
+### Out of scope (per request)
+- ~~Co-Scientist videos (30 s / 60 s / 5 min)~~ — the user will produce these with another tool.
 
 ## Later / optional
 - Per-scene sub-composition export so HyperFrames Studio shows one editable row per scene
@@ -133,8 +138,8 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
 - Cloud/Lambda rendering (needs accounts)
 
 ## Decisions and open questions
-- **BGM licence:** MusicGen weights are CC-BY-NC 4.0 (non-commercial). Default for the
-  Co-Scientist videos: narration + light SFX, no generated music unless requested.
+- **BGM licence:** MusicGen weights are CC-BY-NC 4.0 (non-commercial). Default: narration + light
+  SFX, no generated music unless requested; a user-supplied bed via `audio.music.src`.
 - **Telemetry:** HyperFrames telemetry is on by default upstream; our bridge turns it off.
 - **Pin:** HyperFrames moves fast (v0.8.77 on 2026-09-25); upgrades go through
   `sync-hyperframes.mjs` + the parity test.

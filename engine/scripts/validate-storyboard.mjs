@@ -64,7 +64,7 @@ export async function validateStoryboard(dir, { planOnly = false } = {}) {
     if (words / readable > maxWps * 1.4) add('error', 'READING', `${words} words in ${d}s (${(words / readable).toFixed(1)} w/s) — unreadable; cut text or lengthen`, at);
     else if (words / readable > maxWps) add('warn', 'READING', `${words} words in ${d}s (${(words / readable).toFixed(1)} w/s) — tight`, at);
 
-    // Narration is reserved for the TTS phase; when enabled it drives pacing.
+    // Narration density (a rough pre-synthesis check; voiceover.mjs measures the real thing).
     if (s.narration) {
       const nw = s.narration.split(/\s+/).filter(Boolean).length;
       const wps = nw / d;

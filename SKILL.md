@@ -1,160 +1,269 @@
 ---
 name: video-maker
-description: Plan, build, validate and render motion-graphics videos (explainers, data stories, paper/concept summaries, promos) as deterministic HTML + GSAP compositions rendered frame-by-frame to MP4. Use whenever the user asks to make, animate or render a video, whether they give a detailed shot list ("directed") or just hand over documents and say "make a video from these" ("open"). Any length, resolution, aspect ratio or frame rate.
+description: Plan, narrate, build, validate and render motion-graphics videos (explainers, paper/concept summaries, data stories, promos) as deterministic HTML + GSAP compositions, with local GPU text-to-speech (Kokoro), word-timed captions, sound effects and a mastered mix, rendered to 1080p/4K MP4 by either its own renderer or HyperFrames'. Includes the HyperFrames skills (motion rules, transitions, design presets, audio, media, CLI, Studio) as references. Use whenever the user asks to make, narrate, caption, animate or render a video, whether they give a shot list ("directed") or just hand over documents ("open"). Any length, aspect ratio or frame rate.
 ---
 
 # video-maker
 
 Videos are **code, not footage**. Each video is a small web page whose every visual is driven by
-one paused GSAP timeline. The renderer seeks that timeline to `frame / fps`, screenshots the page
-in headless Chromium, and pipes the frames to FFmpeg. Nothing depends on the wall clock, so the
-same project always renders the same frames — which is what makes planning, validating and
-iterating possible.
+one paused GSAP timeline. A renderer seeks the timeline to `frame / fps`, captures the frame in
+headless Chromium and encodes with FFmpeg. Nothing depends on the wall clock, so a project always
+renders the same frames. That is what makes planning, retiming to a voice, checking and iterating
+possible.
+
+Every project is also a valid **[HyperFrames](references/hyperframes.md)** composition. That means
+two renderers, two linters and the HyperFrames Studio editor all work on the same files, and the
+ten vendored HyperFrames skills serve as reference libraries for motion, design, audio and media.
 
 ```
-brief.md ──► storyboard.json ──► scenes/*.js ──► QA gates 1–4 ──► draft render ──► gate 5 ──► final render
- (what/why)   (the plan: scenes,   (one file per    (plan, lint,     (look at it)    (file facts,
-              durations, beats)     scene)           runtime, eyes)                   black/frozen)
+brief.md ─► storyboard.json ─► design ─► scenes/*.js ─► voiceover ─► QA gates ─► render ─► verify ─► deliver
+ (what/why)  (scenes, narration,  (preset/   (one file     (TTS → retime   (plan, lint,   (vm or hf  (file,     (~/Videos/…)
+              beats, transitions)  palette)   per scene)    → captions/mix) runtime, HF, eyes) engine)   audio)
 ```
 
-`SKILL_DIR` below means the directory containing this file. Scripts take the **project directory**
-as their first argument.
+`SKILL_DIR` means the directory containing this file. Scripts take the **project directory** as
+their first argument and live in `$SKILL_DIR/engine/scripts/`.
 
-## 0 · One-time setup
+## 0 · Setup (once per machine)
 
 ```bash
-cd "$SKILL_DIR/engine" && npm install && npx playwright install chromium
-node "$SKILL_DIR/engine/scripts/doctor.mjs"      # must print "All good."
+cd "$SKILL_DIR/engine" && npm install && npx playwright install chromium-headless-shell
+bash "$SKILL_DIR/tts/install.sh"                   # narration: GPU/CPU auto-detected (Windows: tts\install.ps1)
+node "$SKILL_DIR/engine/scripts/doctor.mjs" --tts  # ✖ must be fixed; ▲ = optional feature missing
 ```
-Needs Node ≥ 18 and ffmpeg/ffprobe on PATH. If Playwright's browser download is blocked, pass
-`--chrome /path/to/chrome` to any script (or set `VM_CHROME`).
 
-## 1 · Intake — decide the mode, pin the spec
+Requirements:
+- **Engine:** Node ≥ 18 (≥ 22 for HyperFrames), FFmpeg, Chromium.
+- **Narration:** `kokoro-tts`, a single environment at `~/venvs/kokoro` with a launcher on PATH.
 
-Classify the request (details and question bank: `references/workflow.md` §1):
+Per-OS and per-GPU steps, for AMD ROCm, NVIDIA CUDA, Intel XPU, Apple MPS and CPU, are in
+`references/install.md`.
+
+## 1 · Intake: decide the mode, pin the spec
 
 | Mode | Signal | Behaviour |
 |---|---|---|
-| **directed** | The user specifies content, order, scenes, style or timing | Follow their instructions exactly. Fill only the gaps; never "improve" what they specified. Ask only about contradictions or missing essentials. |
-| **open** | "Make a video from the attached documents" / a topic with no structure | You own the editorial decisions: read everything, find the story, choose visuals. State every assumption in the brief and the hand-off. |
+| **directed** | The user specifies content, order, scenes, style or timing | Follow their instructions exactly. Fill only the gaps. Ask only about contradictions or missing essentials. |
+| **open** | "Make a video from these documents", or a topic with no structure | You own the editorial decisions: read everything, find the story, choose the visuals. State every assumption in the brief and in the hand-off. |
 
-Pin the technical spec, using these defaults when unstated (say which you assumed):
+Pin the spec. When something is unstated, use the default below and say you assumed it:
 
 | Spec | Default | Notes |
 |---|---|---|
-| Length | open mode: 45–90 s; directed: as asked | Budget ≈ 1 scene per 4–7 s |
-| Aspect / resolution | 16:9 1920×1080 | presets: `720p 1080p 1440p 4k vertical square portrait cinema` |
-| FPS | 30 | 24 for a filmic feel, 60 only for fast motion/UI |
-| Style | dark, clean, one accent colour | see `references/motion-design.md` |
-| Audio | none (voice-over is a later phase — keep `narration` fields filled anyway) | |
+| Length | open: 45–90 s · directed: as asked | about one scene per 4–7 s; narration ≈ 2.3–2.6 words/s (30 s ≈ 70 words, 60 s ≈ 140, 5 min ≈ 650–700) |
+| Resolution | **1080p** (1920×1080) | the only other output is **4K** (`--4k`). Drafts keep full resolution. |
+| Aspect / fps | 16:9 · 30 fps | presets: `1080p 4k vertical square portrait cinema` |
+| Voice | narrated + captioned when `kokoro-tts` is installed | voice `af_heart` or `am_michael`, speed 1.0; silent if the user asks |
+| Style | dark, clean, one accent · or a HyperFrames preset (`design.mjs --list`) | light editorial presets suit papers |
+| Music | none | an optional bed from a user-supplied file (`audio.music.src`) |
+| Delivery | the user's videos folder if known, else `out/` | pass `render.mjs --deliver <dir>` |
 
-If the user is present and a choice changes the whole video (audience, length, aspect, tone), ask
-once with AskUserQuestion. If unattended, pick the default, record it, and continue.
+If the user is present and a choice changes the whole video (audience, length, aspect, tone,
+voice), ask once with AskUserQuestion. If you're working unattended, use the defaults and record
+them.
+
+**Choose the authoring mode.** Use **scene mode** (this workflow) for anything planned scene by
+scene. Use **native HyperFrames mode** only when the deliverable is footage editing, captions on
+existing video, a beat-synced music edit, or an assembly of registry blocks. See
+`references/hyperframes.md`. Native mode still uses the brief, QA, render and hand-off steps
+below.
 
 ## 2 · Scaffold and write the brief
 
 ```bash
-node "$SKILL_DIR/engine/scripts/new-project.mjs" videos/<slug> --title "<Title>" --preset 1080p --duration 60 --mode open
+node "$SKILL_DIR/engine/scripts/new-project.mjs" videos/<slug> --title "<Title>" --duration 60 --mode open \
+     --voice am_michael --captions [--design blue-professional]
 ```
-Fill `brief.md` **before** storyboarding: request, sources digested, audience, goal (what the
-viewer should know/feel/do at the end), ≤ 5 key messages, and an **evidence bank** — every number,
-quote, equation, figure and diagram worth showing, each with its source. In open mode, read every
-attached document fully first; the evidence bank is where accuracy is won or lost. Never invent
-data — if a chart needs numbers the sources don't have, label it *illustrative* on screen.
 
-## 3 · Storyboard — the plan is a file
+Fill `brief.md` **before** storyboarding:
+- the request and the sources digested;
+- the audience and the goal (what the viewer should know, feel or do at the end);
+- at most 5 key messages;
+- an **evidence bank**: every number, quote, equation, figure and diagram worth showing, each with
+  its source (file + page).
 
-Write `storyboard.json` (schema: `references/storyboard-schema.md`). Per scene: `id`, `duration`,
-`purpose` (why it exists), `on_screen_text`, `visual.type` (from `engine/catalog.json`) + `notes`,
-`beats` (named times inside the scene), `transition_in`, and `narration` (reserved for TTS).
-Choose an arc from `references/workflow.md` §3 and visuals from `references/visual-catalog.md`.
+In open mode, read every document fully first; the evidence bank is where accuracy is won or
+lost. Never invent data. If a chart needs numbers the sources lack, label it *illustrative* on
+screen.
+
+## 3 · Storyboard: narration first
+
+Write `storyboard.json` (schema: `references/storyboard-schema.md`). For each scene:
+- `id`, a planned `duration` and a `purpose`;
+- **`narration`**: the spoken line. Write it for the ear and spell numbers the way they should be
+  said.
+- `on_screen_text`: short. Captions carry the words, so the screen carries the idea.
+- `visual.type` (from `engine/catalog.json`) plus `notes`;
+- `beats`: named moments. Add a **`cue: "text:<phrase>"`** so a beat lands on the word that
+  motivates it.
+- `transition_in`: pick **2–3 transition types for the whole video** and repeat them.
+- optional `sfx` cues.
+
+Choose an arc from `references/workflow.md` §3 and visuals from `references/visual-catalog.md`;
+the HyperFrames blueprints and motion rules are listed there too.
 
 ```bash
 node "$SKILL_DIR/engine/scripts/validate-storyboard.mjs" videos/<slug> --plan-only
 ```
 Fix every error. Then **checkpoint**: show the user a compact scene table (id · seconds · purpose ·
-visual) and wait for approval if they are present and the video is longer than ~60 s or the mode
-is open; otherwise continue.
+visual · first words of narration). Wait for approval if they are present and the video is over
+~60 s or the mode is open; otherwise continue.
 
-## 4 · Build — one file per scene
+## 4 · Design
 
-Each storyboard scene `id` maps to `scenes/<id>.js`:
+Pick a look before building scenes, so layout is designed against real colours and fonts:
+
+```bash
+node "$SKILL_DIR/engine/scripts/design.mjs" --list                              # 13 HyperFrames frame presets
+node "$SKILL_DIR/engine/scripts/design.mjs" videos/<slug> --preset blue-professional   # palette + fonts → storyboard.style
+```
+
+`design.mjs`:
+- prints the colour mapping it chose; check it;
+- downloads web fonts once into `assets/fonts/`;
+- copies the preset's `design.md`, whose composition rules you should read.
+
+To build a look by hand instead, set `storyboard.style` directly (`references/motion-design.md`).
+
+## 5 · Build: one file per scene
+
+Each scene `id` maps to `scenes/<id>.js`:
 
 ```js
-VM.scene('rates', {
-  build(ctx) {                                // may be async (e.g. 3D)
-    const box = ctx.add('div', { class: 'safe center stack' });
-    const h = ctx.add('div', { class: 't-title', text: ctx.text[0] }, box);
-    VMX.enter(ctx, h, { at: ctx.at('title'), preset: 'rise' });   // times come from storyboard beats
-    VMX.lineChart(ctx, { series, at: ctx.at('chart') });
+VM.scene('agents', {
+  build(ctx) {
+    const title = ctx.add('div', { class: 't-title', text: ctx.text[0] }, ctx.add('div', { class: 'safe' }));
+    VMX.enter(ctx, title, { at: ctx.at('title'), preset: 'rise' });
+    const d = VMX.hubSpokes(ctx, { hub: 'Supervisor', spokes: ctx.data.agents, at: ctx.at('agents') });
+    VMX.pulse(ctx, d.nodes[2], { at: ctx.at('ranking'), color: 'var(--c-accent)' });   // lands on the spoken word
   }
 });
 ```
-Full API: `references/composition-contract.md`. The non-negotiable rules (the linter enforces them):
 
-1. Every animation goes on `ctx.tl` (or a timeline added to it). No free `gsap.to`.
-2. Anything computed per frame (canvas, WebGL, counters, text from numbers) is drawn in `ctx.onFrame(fn)`.
-3. No `Math.random` (use `ctx.random()`), `Date.now`, timers, `requestAnimationFrame`, CSS animations/transitions, d3 transitions, live force simulations, or `repeat: -1`.
-4. Positions come from `ctx.at('<beat>')`, not magic numbers — so a future voice-over pass can retime beats.
-5. Size in `var(--u)` / `ctx.u` (1 % of the short side) and keep text inside `.safe`, so aspect changes don't break layout.
-6. Vendor every asset into `assets/`; no network at render time.
+The full API is in `references/composition-contract.md`. It covers `ctx`, the `VMX.*` helpers
+(motion, text, charts, science, 3D, figures), overlays and transitions. For motion technique,
+take snippets from the vendored HyperFrames rules and translate them with the table in
+`references/hyperframes.md`.
 
-Preview while building: `node "$SKILL_DIR/engine/scripts/preview.mjs" videos/<slug>` → open the
-URL (scrubber, scene markers, `?scene=id`, `?t=12.5`).
+Rules the linter enforces:
 
-## 5 · Validate — automated gates, then your eyes
+1. Every animation goes on `ctx.tl`, or on a timeline added to it. No free-running `gsap.to`.
+2. Anything computed per frame (canvas, WebGL, counters) is drawn in `ctx.onFrame(fn)`.
+3. Not allowed: `Math.random` (use `ctx.random()`), `Date.now`, timers, `requestAnimationFrame`,
+   CSS animations and transitions, WAAPI, d3 transitions, live force simulations,
+   `repeat: -1`.
+4. Times come from `ctx.at('<beat>')`, never from magic numbers, because the voice-over retimes
+   beats.
+5. Size in `var(--u)` / `ctx.u` (1 % of the short side) and keep text inside `.safe`. **With
+   captions on, keep scene text out of the bottom ~16 % of the frame.**
+6. Vendor every asset into `assets/`. Nothing may load from the network at render time.
+
+Preview while building:
+- `node "$SKILL_DIR/engine/scripts/preview.mjs" videos/<slug>` opens our scrubber (`?preview`,
+  `?scene=id`, `?t=12.5`);
+- `node "$SKILL_DIR/engine/scripts/hf.mjs" videos/<slug> preview` opens HyperFrames Studio.
+
+## 6 · Voice: synthesize, retime, caption, mix
 
 ```bash
-node "$SKILL_DIR/engine/scripts/qa.mjs" videos/<slug>      # gates 1–4 → qa/report.md + qa/contact-sheet-*.png
+node "$SKILL_DIR/engine/scripts/voiceover.mjs" videos/<slug>         # --force, --voice, --speed, --no-retime
 ```
-Gate 1 storyboard · Gate 2 lint · Gate 3 runtime (errors, determinism, off-stage/clipped/tiny/
-overlapping/low-contrast text, reading speed, blank frames) · Gate 4 contact sheets.
-**Then Read every contact sheet image** and score it with the visual rubric in
-`references/validation.md` — the gates catch mechanics; only looking catches a chart that says the
-wrong thing, a cramped layout, or a 3D camera pointing at nothing. Use
-`snapshot.mjs <project> --scene <id>` or `--times a,b,c` to inspect specific moments. Fix → re-run
-`qa.mjs` until it passes with no unexplained warnings and the rubric has no ✗. Cap at ~4 loops;
-if something still fails, say so plainly.
 
-## 6 · Render and verify
+This one command does four things:
+- **Synthesize.** Each scene's narration goes through `kokoro-tts` (local GPU). Clips are cached
+  per line, so editing one line re-synthesizes one clip.
+- **Retime.** Each scene becomes as long as its narration needs, plus the pads and the next
+  transition. Cued beats snap to their words and other beats scale. The silent plan is kept in
+  `scene.silent`, so you can re-run.
+- **Caption.** It writes `audio/captions.{json,srt,vtt}`. When `audio.captions.enabled`, the
+  captions overlay draws them from these files.
+- **Mix.** It writes `audio/mix.wav`: the voice, an optional ducked music bed and the `sfx` cues,
+  mastered to −16 LUFS / −1.5 dBTP.
+
+Re-run it after any narration or timing edit. Scene code doesn't change, because it reads
+`ctx.at()`. Read `audio/timing.json` and the SRT to check pacing: a scene with a long silent tail
+or a rushed line gets rewritten, not padded. Details: `references/voiceover.md`.
+
+## 7 · Validate: automated gates, then your eyes
 
 ```bash
-node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> --quality draft          # fast 720p check
+node "$SKILL_DIR/engine/scripts/qa.mjs" videos/<slug>      # → qa/report.md + qa/contact-sheet-*.png
+```
+
+| Gate | Checks |
+|---|---|
+| 1 · storyboard | structure; reading load; narration that doesn't fit its scene (`NARRATION_CUT`); a stale mix |
+| 2 · lint | the determinism rules |
+| 3 · runtime | errors; determinism; text that is off-stage, clipped, tiny, overlapping or low-contrast; blank frames |
+| 3b · HyperFrames check | the same page through HF's lint/layout/motion/contrast sweep (transition-window overlaps count as info) |
+| 4 · snapshots | contact sheets |
+
+**Then Read every contact sheet** and score it with the rubric in `references/validation.md`. The
+gates catch mechanics; only looking catches a chart that says the wrong thing, a cramped layout, a
+caption covering a label, or a 3D camera pointing at nothing.
+- To look at specific moments: `snapshot.mjs <project> --scene <id>` or `--times a,b,c`.
+- Fix, then re-run `qa.mjs` until it passes with no unexplained warnings and the rubric has no ✗.
+- Cap it at about 4 loops. If something still fails, say so plainly.
+
+## 8 · Render and verify
+
+```bash
+node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> --engine hf --quality draft     # fast full-res check
 node "$SKILL_DIR/engine/scripts/verify-output.mjs" videos/<slug> videos/<slug>/out/<file>.mp4
-node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> --quality high [--height 2160] [--fps 60]
+node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> --engine hf --quality high [--4k] --deliver <dir>
 ```
-Useful flags: `--scene id` or `--from/--to` for partial renders, `--workers N`, `--format webm|png`,
-`--codec h265`, `--audio file` (muxes a track — the hook the TTS phase will use). Details and
-performance notes: `references/rendering.md`. Gate 5 (`verify-output.mjs`) checks resolution, fps,
-frame count, black gaps and frozen stretches. Extract and look at 2–3 frames from the final file.
 
-## 7 · Deliver
+- **`--engine hf`** (HyperFrames: beginFrame capture, about 3× faster) and **`--engine vm`** (ours,
+  the default) produce the same frames.
+- **Use `vm`** for `--scene` / `--from --to` partial renders, `--codec h265` and PNG frames.
+- **Use `hf`** for `--format mov|gif`, `--docker` or `--gpu`.
+- **Audio:** `audio/mix.wav` is included automatically on both engines. `--no-audio` renders
+  silent; `--audio f` overrides the mix.
+- **`--deliver <dir>`** copies the MP4, its SRT/VTT and a poster frame.
 
-Hand over: the final MP4 (in the user's folder if one is connected), a poster frame, and a short
-note with length/resolution, the scene list, assumptions made, anything *illustrative*, and any QA
-warnings you chose to accept (with why). Keep the project folder — it is the editable source.
+Gate 5 (`verify-output.mjs`) checks resolution, fps, frame count, audio presence and length, and
+black or frozen stretches. Extract and look at 2–3 frames from the final file. More detail:
+`references/rendering.md`.
+
+## 9 · Deliver
+
+Hand over:
+- the final MP4 in the delivery folder, plus the poster and the `.srt`;
+- a short note: length, resolution, voice, the scene list, the assumptions made, anything
+  *illustrative*, and any QA warnings you accepted, with why.
+
+Keep the project folder: it is the editable source. Re-running `voiceover.mjs` and `render.mjs`
+reproduces the video exactly.
 
 ## Extending the skill
 
-It is deliberately open-ended; add rather than fork.
-- **New visual pattern** → write a helper in `engine/runtime/helpers/` (register on `VM.helpers`,
-  add it to `boot.js`), add the type to `engine/catalog.json`, document it in `references/visual-catalog.md`.
-- **New transition** → `VM.transition('name', (tl, el, at, dur, ease) => …)` in a project script, or in `vm.js`.
-- **Project-specific code** → `lib/*.js` listed in `storyboard.assets.scripts` (loaded before scenes).
-- **House style** → a `style` block (palette, fonts, motion presets) reused across storyboards.
-- **Voice-over (planned)** → see `references/voiceover-roadmap.md`; the storyboard already carries
-  `narration`, `audio.voiceover` and beat ids for it.
+Extend it by adding rather than forking.
+- **New visual pattern:** add a helper in `engine/runtime/helpers/`, register it on `VM.helpers`,
+  add it to `boot.js`, add its type to `engine/catalog.json` and document it in
+  `references/visual-catalog.md`. Port from a HyperFrames rule when one exists, and name the
+  source file in a comment.
+- **New transition:** `VM.transition('name', (tl, inEl, at, dur, ease, outEl, spec) => …)` in
+  `engine/runtime/transitions.js`, or in a project script.
+- **Whole-video layer** (watermark, progress bar, chapter tag): `VM.overlay('name', { build(ctx,
+  opts) })`, enabled with `storyboard.overlays`.
+- **Project-specific code:** `lib/*.js` listed in `storyboard.assets.scripts`.
+- **House style:** a `frame.md` spec applied with `design.mjs --spec`.
+- **Upgrading HyperFrames:** `sync-hyperframes.mjs --version X`, plus `npm i -E hyperframes@X` in
+  `engine/`, then the parity check in `references/hyperframes.md`.
 
 ## Reference map
 
 | File | Read when |
 |---|---|
-| `references/workflow.md` | Every video: intake questions, research/digest, arcs, pacing budgets, long-form structure |
-| `references/storyboard-schema.md` | Writing or editing storyboard.json |
-| `references/composition-contract.md` | Writing scene code: `ctx`, `VMX.*` helpers, styling, 3D, assets |
-| `references/visual-catalog.md` | Choosing how to show each idea; library rationale (from viz-bench) |
-| `references/motion-design.md` | Timing, easing, typography, colour, layout, what makes it look professional |
-| `references/validation.md` | Gates, the visual review rubric, common failures and fixes |
-| `references/rendering.md` | Render flags, presets, performance, troubleshooting |
-| `references/voiceover-roadmap.md` | Planning the TTS phase |
-| `examples/gradient-descent/` | A complete, passing 50 s project exercising most helpers |
+| `references/workflow.md` | Every video: intake questions, digest, arcs, pacing and narration budgets, long-form structure |
+| `references/storyboard-schema.md` | Writing or editing storyboard.json (scenes, beats and cues, audio, captions, sfx, overlays) |
+| `references/composition-contract.md` | Writing scene code: `ctx`, `VMX.*`, overlays, transitions, styling, 3D, assets |
+| `references/visual-catalog.md` | Choosing how to show each idea; HyperFrames blueprints and rules mapped to our helpers |
+| `references/motion-design.md` | Timing, easing, transitions, typography, colour, layout, design presets |
+| `references/voiceover.md` | Narration, voices, retiming, captions, SFX, music, loudness |
+| `references/validation.md` | Gates, the visual rubric, common failures and fixes |
+| `references/rendering.md` | Engines, render flags, 1080p/4K, delivery, performance, troubleshooting |
+| `references/hyperframes.md` | The bridge, the two authoring modes, translating HF snippets, where each HF topic lives |
+| `references/install.md` | Installing on Linux/macOS/Windows for each GPU type; TTS troubleshooting |
+| `vendor/hyperframes/skills/*` | HyperFrames' own references (routed from `references/hyperframes.md`) |
+| `examples/gradient-descent/` | A complete, passing project that exercises most helpers |

@@ -15,6 +15,10 @@ Pick the visual that shows the idea most **directly**; text is the fallback. The
 | A trend / convergence | `line-chart` | `lineChart`, `tracer` | ≤ 4 series; label lines directly (no legend box); draw series in sequence. |
 | A vs B | `comparison` | two columns + `enter`/`counter` | Same scale on both sides. |
 | A process / architecture | `diagram` | cards + `arrow`/`draw` | Reveal in reading order; loop-backs as curved arrows in a second colour. |
+| A coordinator and its parts (orchestrator + agents, hub + services) | `diagram` | `hubSpokes`, `pulse` | ≤ 8 spokes; pulse each spoke on the word that names it. |
+| A repeating loop (generate → critique → refine) | `diagram` | `cycle` | 3–6 stages; the arrows draw in order, so narration can walk the loop. |
+| A score, share or progress | `stat` | `ring` (or `barChart` for several) | One ring per idea; the number counts up with the arc. |
+| Zooming into part of a big diagram | `diagram` | `camera` on a wrapper | Establish the whole first, then move; ≤ 2 moves per scene. |
 | Events in time | `timeline` | axis line `draw` + `enter` markers | Camera pan (translate a wrapper) for long timelines. |
 | Relations between things | `network` | `network` | ≤ 15 nodes on screen; highlight a path rather than showing everything. |
 | A formula / derivation | `equation` | `tex`, `texSteps`, `circle` | Build in pieces so you can point at terms; label terms in words. |
@@ -26,6 +30,31 @@ Pick the visual that shows the idea most **directly**; text is the fallback. The
 | Emphasis on top of anything | `annotation` | `circle`, `sketch`, `arrow` | Hand-drawn = "look here". Use sparingly. |
 | Geography | `map` | d3-geo + `draw` | Local GeoJSON; animate the route/region, not the whole map. |
 | Summary / CTA / credits | `outro` | `reveal`, `enter` | Restate the goal line from the brief. |
+
+## HyperFrames blueprints and rules → our helpers
+
+`vendor/hyperframes/skills/hyperframes-animation/` holds 22 multi-phase shot **blueprints**
+(`blueprints-index.md`) and 43 atomic **rules** (`rules-index.md`), all plain GSAP. Read the
+blueprint for structure and timing, then build it with our helpers (translation table in
+`references/hyperframes.md`):
+
+| HF blueprint / rule | Use it for | Build with |
+|---|---|---|
+| `kinetic-type-beats`, `titlecard-reveal` | hooks, chapter cards | `kinetic-title`: `reveal`, `enter` |
+| `constellation-hub`, rule `avatar-cloud-network` | a system and its parts | `hubSpokes`, `network` |
+| `agent-progress-theater` | agents/steps working in turn | `hubSpokes` + `pulse` per step, or `bullet-build` |
+| `dataviz-countup`, rules `counting-dynamic-scale`, `stat-bars-and-fills` | headline numbers | `stat`: `counter`, `ring`, `barChart` |
+| rule `chart-scrub-readout` | reading values along a curve | `lineChart` + `tracer` |
+| `comparison-split` | A vs B | `comparison` |
+| `spatial-pan-stations`, `camera-journey`, rules `viewport-change`, `coordinate-target-zoom` | moving through one large diagram | `camera` on a wrapper |
+| rule `svg-path-draw` | lines, routes, arrows | `draw`, `arrow` |
+| rule `css-marker-patterns` | highlight/underline/circle emphasis | `highlight`, `circle`, `sketch` |
+| rule `asr-keyword-glow` | emphasis synced to speech | beat `cue` + `pulse` |
+| `typewriter-reveal`, `prompt-type-submit-generate` | prompts, code, a research goal being typed | `typeOn` |
+| `grid-card-assemble` | a set of items/examples | `bullet-build` in a grid, `enter` with stagger |
+
+Product-launch blueprints (`cursor-ui-demo`, `device-surface-showcase`, `cta-morph-press`,
+`panel-edit-live-sync`, `ticker-takeover`) rarely suit explainers.
 
 ## Why these libraries (from the viz-bench survey)
 
@@ -48,7 +77,8 @@ Deliberately **not** used, with reasons carried over from viz-bench and adjusted
 - **uPlot / Observable Plot / Plotly / ECharts** — built for interaction or one-shot rendering;
   none expose a seekable animation model, and Plot rebuilds its SVG on every call. D3 + GSAP gives
   finer control of the build-up.
-- **d3 transitions, CSS animations, anime.js loops, Motion** — wall-clock driven; break determinism.
+- **d3 transitions, CSS animations, anime.js loops, Motion** — wall-clock driven; break determinism in scene
+  mode. (HyperFrames' native mode has seek adapters for CSS/WAAPI/Anime.js/Lottie; use those only there.)
 - **Lottie** — only if you have pre-authored files; drive it with `goToAndStop` in `onFrame`.
 - **Motion Canvas / Revideo / Remotion / Manim** — excellent video-as-code tools with their own
   runtimes. This skill keeps the web page as the medium so the viz-bench library knowledge,
