@@ -38,7 +38,64 @@ node scripts/doctor.mjs
   - Docker, for `render --engine hf --docker`, which gives byte-identical renders across machines.
   - Telemetry: our `hf.mjs` bridge turns it off (`HYPERFRAMES_NO_TELEMETRY=1`).
 
-## 2 · Narration: `kokoro-tts`
+## 2 · Speech engines: look first, then install (`tts/setup.sh`)
+
+Two local engines, set up by one planner:
+
+| Engine | Command | Good for | Licence |
+|---|---|---|---|
+| **Kokoro-82M** (default) | `kokoro-tts` | fast, clean stock voices; fine on a CPU | Apache-2.0 |
+| **Breeze TTS 2** (3B, optional) | `breeze-tts` | cloning a voice from a 10–25 s clip, designing a voice from a description, directing delivery ("whisper, nervous"), sounds like `(sigh)` `(laugh)` | weights and outputs **research / non-commercial only** |
+
+```bash
+bash tts/setup.sh --plan     # look at this machine and explain what it would do; changes nothing
+bash tts/setup.sh            # the same, then ask, then install (Breeze asks you to accept its licence)
+bash tts/setup.sh --engines kokoro          # only Kokoro
+bash tts/setup.sh --yes --accept-breeze-license   # unattended
+python3 tts/probe.py --json  # the plan as JSON
+```
+
+**Claude:** run `--plan` first, tell the user what it found and what it will install (sizes,
+untested combinations, the Breeze licence), and install only after they agree. Never pass
+`--accept-breeze-license` unless the user accepted it.
+
+What the planner looks at (read-only): OS and container; the GPU (vendor, model, NVIDIA compute
+capability and driver CUDA version, AMD gfx target and VRAM/unified memory, Apple Silicon);
+RAM, free disk, `uv`/`git`/`ffmpeg`/`espeak-ng`; what is already installed (existing
+environments, weights, launchers, the registry) and whether LocalTTS is running.
+
+How it decides for Breeze:
+
+| Machine | Plan | Status |
+|---|---|---|
+| NVIDIA sm_80+ (Ampere, Ada, Hopper, Blackwell), ≥ 10 GB | PyTorch 2.9.1 `cu126/cu128/cu130` (newest the driver runs), bf16, fast stages | follows upstream; not yet run through this installer |
+| NVIDIA sm_75/sm_70 (Turing, Volta), ≥ 10 GB | same, but **fp16** (no native bf16) | untested; `BREEZE_DTYPE=fp32` is the fallback |
+| AMD gfx1151 (Strix Halo) | AMD `whl-next` nightly PyTorch, bf16, fast stages | **tested**: RTF ≈ 1.5, first audio ≈ 0.35 s |
+| Other AMD with a ROCm build (RDNA2/3/4, MI) | TheRock nightly for the family, bf16, **eager** | untested; fast stages off because hipBLASLt could not be captured in a HIP graph on the builds tried |
+| Apple Silicon, or no GPU | CPU only, very slow | installs only with `--allow-cpu-breeze`; use Kokoro instead |
+| < 10 GB GPU memory, NVIDIA older than sm_70 | not supported | |
+
+What gets installed where:
+- `~/venvs/kokoro`, `~/venvs/breeze-tts`: one Python 3.12 environment per engine, torch installed
+  first for the right backend (a dependency that swaps it is caught and undone).
+- `~/.local/share/tts-engines/breeze-tts`: upstream Breeze at a pinned commit plus
+  `tts/breeze/patches/` (the ROCm port and the `BREEZE_DTYPE` switch). Weights (7.2 GB) go
+  beside it unless the planner finds existing ones; Whisper large-v3-turbo (1.6 GB) goes to the
+  Hugging Face cache for word timings.
+- `~/.local/bin/kokoro-tts`, `~/.local/bin/breeze-tts`: launchers (they hop to the host from a
+  toolbox/distrobox container).
+- `~/.config/tts-engines/engines.json`: **the registry**. What was installed, for which backend,
+  dtype and fast stages. `kokoro-tts`, `breeze-tts`, video-maker and LocalTTS all read it, so an
+  engine is installed once per machine. `python3 tts/registry.py show` prints it.
+
+Each installer smoke-tests the engine before recording it, so a broken install is never
+registered. Re-running continues where it stopped.
+
+**LocalTTS (optional, separate app).** An always-on API + web UI for the same engines, with the
+GPU freed after 10 idle minutes; it can also run on a remote GPU box behind `ssh -L`. The skill
+uses it with `audio.voiceover.provider: "localtts"` (see `voiceover.md`).
+
+## 3 · Kokoro details (`kokoro-tts`)
 
 Kokoro turns text into speech in two stages:
 
@@ -50,7 +107,9 @@ Kokoro turns text into speech in two stages:
 Kokoro is small enough to run faster than real time on a CPU. A GPU matters for long narration
 and batch work.
 
-### One-command install (recommended)
+### Kokoro on its own
+
+`tts/setup.sh` runs this for you. To run it directly:
 
 ```bash
 bash tts/install.sh                      # Linux / macOS: auto-detects the backend
@@ -148,3 +207,32 @@ node engine/scripts/voiceover.mjs videos/<slug>                      # narrate a
 | `kokoro-tts: command not found` | `~/.local/bin` not on PATH. fish: `fish_add_path ~/.local/bin` · bash/zsh: `export PATH="$HOME/.local/bin:$PATH"` · Windows: open a new terminal |
 | misaki tries to `pip install en_core_web_sm` and fails | uv environments have no pip; install the model wheel as in step 5 |
 | Nightly index installs something very old / loops | Use the multi-arch index above, or pin a known-good date |
+
+## 4 · Breeze details (`breeze-tts`)
+
+```bash
+breeze-tts --voices                                              # saved voices
+breeze-tts --add-voice Me clip.wav --ref-text "exact words in the clip"
+breeze-tts "Hello." --voice Me -o hello.wav --timings hello.json # clone
+breeze-tts "Hello." --voice Me --instruction "whispering, nervous" -o h.wav   # direction
+breeze-tts "Hello." --instruction "a calm, deep narrator" -o h.wav           # design
+breeze-tts --check                                               # device report + RTF
+```
+
+- **Voices** are folders `<name>/{reference.wav, voice.json}` (the LocalTTS layout) in
+  `~/.local/share/tts-engines/voices/` plus any `voices_dirs` in the registry (LocalTTS adds
+  its own), so a voice saved in either place works in both.
+- **A designed voice** is generated once from the description and then cloned for every clip,
+  so a whole video keeps one voice. The sample is cached per description + seed.
+- **Word timings** come from Whisper, matched back to the script's own words, so captions and
+  `cue`s work as with Kokoro. `(sigh)`-style tags are sounds, not words, and are left out.
+- **Overrides:** `BREEZE_DTYPE=bf16|fp16|fp32`, `BREEZE_FAST=depth_decoder,backbone_decode`
+  (empty = eager), `BREEZE_DEVICE=cuda|cpu`, `BREEZE_REPO`, `BREEZE_MODEL`, `BREEZE_WHISPER`.
+
+| Symptom | Cause / fix |
+|---|---|
+| Hangs during "Capturing CUDA graph" (AMD) | the torch build's hipBLASLt can't be captured: `BREEZE_FAST= breeze-tts --check`; if eager works, re-run setup with `--breeze-fast ""` |
+| `NaN/inf audio` | fp16 overflow on an older NVIDIA card: `BREEZE_DTYPE=fp32` (needs ~2× memory) |
+| Clone sounds unlike the reference | the transcript must match the clip word for word; 10–25 s of clean speech works best |
+| `no saved voice` | `breeze-tts --voices`; add it with `--add-voice`, or save it in LocalTTS |
+| Out of memory | Breeze needs ~9 GiB; unload other models (e.g. `localtts unload`) |

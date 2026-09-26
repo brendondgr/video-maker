@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Check that everything the engine needs is installed, and say how to fix what is not.
-//   node doctor.mjs [--tts]     --tts also runs `kokoro-tts --check` (loads the model, times a sentence)
+//   node doctor.mjs [--tts]     --tts also runs `kokoro-tts --check` / `breeze-tts --check` (loads each model)
 // ✖ = required and missing · ▲ = optional feature unavailable (HyperFrames engine, narration)
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,15 +40,27 @@ opt(!!(await which('codex')), 'codex CLI (image backend "codex")', 'npm i -g @op
   let up = false; try { const r = await fetch(url, { signal: AbortSignal.timeout(1500) }); up = r.ok; } catch { /* down */ }
   opt(up, `ComfyUI reachable at ${url.replace('/system_stats', '')} (image backend "comfy")`, 'comfyui start   (or set COMFY_URL); model families are install-specific: imagegen/reference/backends.md');
 }
-const tts = process.env.VM_TTS || 'kokoro-tts';
-const hasTTS = !!(await which(tts));
-opt(hasTTS, `${tts} on PATH (narration via voiceover.mjs)`, `bash ${path.join(SKILL_DIR, 'tts', 'install.sh')}   (Windows: tts\\install.ps1) — see references/install.md`);
+// Speech: kokoro-tts (default), breeze-tts (non-commercial), and the optional LocalTTS app.
+const setup = `bash ${path.join(SKILL_DIR, 'tts', 'setup.sh')} --plan   (explains what this machine needs; Windows: tts\\install.ps1)`;
+const engines = [
+  { name: 'kokoro', cmd: process.env.VM_TTS || 'kokoro-tts', what: 'narration via voiceover.mjs (default voice)' },
+  { name: 'breeze', cmd: process.env.VM_BREEZE_TTS || 'breeze-tts', what: 'provider "breeze": voice clone/design, non-commercial' },
+];
+for (const e of engines) e.found = !!(await which(e.cmd));
+for (const e of engines) opt(e.found, `${e.cmd} on PATH (${e.what})`, setup);
 opt(!!(await which('espeak-ng')), 'espeak-ng (Kokoro fallback for unknown words)', 'dnf/apt/pacman install espeak-ng · brew install espeak-ng · winget install eSpeak-NG.eSpeak-NG');
-if (args.tts && hasTTS) {
-  console.log('  running kokoro-tts --check …');
-  const r = spawnSync(tts, ['--check'], { encoding: 'utf8', shell: process.platform === 'win32' });
-  console.log((r.stderr || '').split('\n').filter((l) => /torch|RTF|device/.test(l)).map((l) => '    ' + l).join('\n'));
-  opt(r.status === 0, 'kokoro-tts synthesizes', 'see the output above and references/install.md § troubleshooting');
+{
+  const url = (process.env.LOCALTTS_URL || 'http://127.0.0.1:5040').replace(/\/+$/, '');
+  let up = false; try { const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(1500) }); up = r.ok; } catch { /* down */ }
+  opt(up, `LocalTTS reachable at ${url} (provider "localtts")`, 'optional app: an always-on TTS API + web UI (`localtts start`, or set LOCALTTS_URL)');
+}
+if (args.tts) {
+  for (const e of engines.filter((x) => x.found)) {
+    console.log(`  running ${e.cmd} --check …`);
+    const r = spawnSync(e.cmd, ['--check'], { encoding: 'utf8', shell: process.platform === 'win32' });
+    console.log((r.stderr || '').split('\n').filter((l) => /torch|RTF|device/.test(l)).map((l) => '    ' + l).join('\n'));
+    opt(r.status === 0, `${e.cmd} synthesizes`, 'see the output above and references/install.md § troubleshooting');
+  }
 }
 console.log(ok ? '\nAll good.' : '\nFix the ✖ items above.');
 process.exit(ok ? 0 : 1);

@@ -5,11 +5,12 @@ picture to the voice:
 
 ```bash
 node engine/scripts/voiceover.mjs <project> [--force] [--no-retime] [--mix-only] [--voice am_michael] [--speed 1.05]
+                                             [--provider kokoro|breeze|localtts] [--instruction "…"]
 ```
 
 | Step | Output | Notes |
 |---|---|---|
-| 1 Synthesize | `audio/vo/<scene>-<hash>.wav` + `.json` word timings | `kokoro-tts --batch` (local Kokoro-82M on GPU/CPU). Cached by text + voice + speed, so editing one line re-synthesizes one clip. Env `VM_TTS` swaps the command. |
+| 1 Synthesize | `audio/vo/<scene>-<hash>.wav` + `.json` word timings | Through `audio.voiceover.provider` (below): `kokoro-tts --batch` by default. Cached by text + every voice setting, so editing one line re-synthesizes one clip. Env `VM_TTS` / `VM_BREEZE_TTS` swap the commands. |
 | 2 Retime | `storyboard.json` rewritten | Each scene's `duration` = what its narration needs (below). Beats with `cue` snap to their word; other beats scale. The first run stores the silent plan in `scene.silent`, so later runs start from it. |
 | 3 Assemble | `audio/voiceover.wav`, `audio/timing.json` | Clips are placed at scene start + that scene's transition + `pad_before`. |
 | 4 Captions | `audio/captions.{json,srt,vtt}` | Only when `audio.captions.enabled`. |
@@ -20,13 +21,49 @@ in `index.html`, so both engines and Studio play the same sound. **Re-run `voice
 any narration, voice, duration or transition change.** Gate 1 warns when the mix is older than
 the storyboard.
 
+## Voices: three providers
+
+| `provider` | What speaks | Use it when | Needs |
+|---|---|---|---|
+| `kokoro` (default) | Kokoro-82M stock voices | almost always: fast, clean, commercial use is fine | `kokoro-tts` |
+| `breeze` | Breeze TTS 2: **your own cloned voice**, a designed voice, or a directed delivery | the user asks for their voice, a specific character, or emotion/sounds | `breeze-tts`; **non-commercial only** |
+| `localtts` | either engine through a running LocalTTS server (local or a forwarded GPU box) | LocalTTS is already running, or the GPU is on another machine | the LocalTTS app |
+
+Install the engines with `bash tts/setup.sh` (it inspects the machine first; `install.md` §2).
+**Kokoro stays the default.** Use Breeze only when the user wants a cloned or designed voice,
+and say that its audio is licensed for research / non-commercial use; don't use it for anything
+the user plans to sell or publish commercially.
+
+Breeze settings: `voice` is a **saved voice name** (`breeze-tts --voices`; add one with
+`breeze-tts --add-voice Name clip.wav --ref-text "exact words"`, or save it in LocalTTS).
+`instruction` without a voice **designs** one from a description ("a warm, unhurried
+documentary narrator"); the design is generated once and cloned for every clip, so the video
+keeps one voice. With a voice, `instruction` **directs** the delivery ("calm, like a good
+teacher"). Tags `(sigh)` `(laugh)` `(cough)` `(clears throat)` inside `narration` are performed
+as sounds and kept out of the captions. Breeze has no `speed`; ask for pace in the
+instruction. Word timings come from Whisper matched to the script, so `cue`s and captions work
+as with Kokoro.
+
+```jsonc
+"voiceover": { "enabled": true, "provider": "breeze", "voice": "Brendon",
+               "instruction": "calm and clear, like a good teacher", "seed": 42 }
+"voiceover": { "enabled": true, "provider": "breeze", "instruction": "a gravelly old sea captain" }
+"voiceover": { "enabled": true, "provider": "localtts", "voice": "Brendon",        // or a Kokoro name
+               "engine": "auto", "url": "http://localhost:5041" }                  // url: optional
+```
+
+With `localtts`, word timings come from the server's `/v1/align` (Whisper); an older server
+without it gets estimated timings and a warning.
+
 ## Settings (`storyboard.audio`)
 
 ```jsonc
 "audio": {
   "voiceover": {
     "enabled": true,
+    "provider": "kokoro",    // kokoro (default) · breeze · localtts (see "Voices: three providers")
     "voice": "am_michael",   // kokoro-tts --voices · af_heart (warm F), af_bella, am_michael (calm M), am_adam, bf_emma, bm_george (UK)
+                             // breeze/localtts: a saved voice name, or omit and give "instruction"
     "speed": 1.0,            // 0.9–1.15 reads naturally
     "lang": "a",             // a = US English, b = UK English
     "pad_before": 0.3,       // s of silence after the scene's own transition, before the first word

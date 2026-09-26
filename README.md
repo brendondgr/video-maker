@@ -8,7 +8,8 @@ A Claude skill that makes narrated motion-graphics videos as code. It works in f
    prompt each) and generated through the bundled `imagegen` dispatcher (Codex or a local
    ComfyUI). Diagrams and charts are never generated: they are built in SVG, step by step, with
    each step landing on the word that names it (`references/visual-playbook.md`).
-3. **Voice.** Local GPU text-to-speech (Kokoro-82M) produces the narration with word timings.
+3. **Voice.** Local GPU text-to-speech produces the narration with word timings: Kokoro-82M by
+   default, or Breeze TTS 2 for a cloned or designed voice (non-commercial).
    Scenes and beats are retimed to the voice, and captions, sound effects and a mastered mix are
    generated from it.
 4. **Check.** QA gates (ours plus HyperFrames' `check`) run automatically, followed by a visual
@@ -31,7 +32,8 @@ engine/                  runtime (browser) + scripts (Node) + catalog.json   ←
   scripts/               new-project, design, validate-storyboard, plan, images, lint, check, snapshot, qa, voiceover,
                          preview, render, verify-output, hf (HyperFrames bridge), sync-hyperframes, doctor
 imagegen/                bundled image dispatcher (codex / comfy backends, manifest contract), used by images.mjs
-tts/                     kokoro-tts: CLI + installers (install.sh for Linux/macOS, install.ps1 for Windows)
+tts/                     speech engines: setup.sh (inspects the machine, then installs), kokoro-tts,
+                         breeze/ (breeze-tts + patches), registry.py; install.ps1 for Windows (Kokoro)
 vendor/hyperframes/      ten HyperFrames skills, vendored unmodified (Apache-2.0, pinned v0.8.77)
 templates/project/       what new-project.mjs copies · templates/scene-brief.md: brief for parallel scene builds
 examples/gradient-descent/  a complete 50 s example that passes every gate
@@ -42,7 +44,8 @@ Setup (details in `references/install.md`):
 
 ```bash
 cd engine && npm install && npx playwright install chromium-headless-shell
-bash ../tts/install.sh                     # narration; auto-detects ROCm / CUDA / XPU / MPS / CPU
+bash ../tts/setup.sh --plan                # narration: shows what this machine needs (ROCm/CUDA/MPS/CPU)
+bash ../tts/setup.sh                       # then installs Kokoro, and Breeze if you accept its licence
 node scripts/doctor.mjs --tts
 ```
 
@@ -72,3 +75,6 @@ Licences:
 - **HyperFrames skills and CLI:** Apache-2.0 (`vendor/hyperframes/LICENSE`, `NOTICE.md`).
 - **Bundled SFX:** Pixabay Content License.
 - **Kokoro-82M weights:** Apache-2.0.
+- **Breeze TTS 2:** code Apache-2.0 (the patches in `tts/breeze/patches/` are too); the weights
+  and everything they generate are research / non-commercial only. Downloaded at install time,
+  not bundled.

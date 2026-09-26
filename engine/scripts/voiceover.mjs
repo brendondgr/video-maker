@@ -2,10 +2,12 @@
 // Narrate, retime, caption and mix a project.
 //
 //   node voiceover.mjs <project> [--force] [--no-retime] [--mix-only] [--voice am_michael] [--speed 1.05]
+//                               [--provider kokoro|breeze|localtts] [--instruction "…"]
 //
 // 1. Synthesize: every scene's `narration` → audio/vo/<scene>-<hash>.wav + word timings, through
-//    `kokoro-tts --batch` (local GPU Kokoro; VM_TTS overrides the command). Clips are cached by
-//    text/voice/speed, so editing one line re-synthesizes one clip.
+//    audio.voiceover.provider (lib/tts.mjs): kokoro-tts (default), breeze-tts, or a LocalTTS
+//    server. Clips are cached by text and every voice setting, so editing one line
+//    re-synthesizes one clip.
 // 2. Retime (audio.voiceover.retime = fit | extend | off): each scene's duration becomes what its
 //    narration needs; beats with `cue` snap to words, other beats scale. The silent plan is kept
 //    in scene.silent. storyboard.json is rewritten.
@@ -17,10 +19,10 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { spawn } from 'node:child_process';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, fmtTime } from './lib/common.mjs';
 import { syncProject, timelineTotal, sceneTimes } from './lib/hf.mjs';
 import { voSettings, retime, readWav, writeWav, narrationLead, captionGroups, toSRT, toVTT, sfxCues, buildMix, requiredDuration } from './lib/audio.mjs';
+import { synthesize, voiceKey, voiceLabel } from './lib/tts.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
@@ -30,13 +32,15 @@ sb.audio = sb.audio || {};
 sb.audio.voiceover = Object.assign({ enabled: true }, sb.audio.voiceover || {});
 if (args.voice) sb.audio.voiceover.voice = args.voice;
 if (args.speed) sb.audio.voiceover.speed = +args.speed;
+if (args.provider) sb.audio.voiceover.provider = args.provider;
+if (args.instruction) sb.audio.voiceover.instruction = args.instruction;
 const vo = voSettings(sb);
 const audioDir = path.join(dir, 'audio'), clipDir = path.join(audioDir, 'vo');
 await fsp.mkdir(clipDir, { recursive: true });
 const findings = [];
 
 // ---------------------------------------------------------------- 1. synthesize
-const key = (s) => crypto.createHash('sha1').update([vo.provider, vo.voice, vo.speed, vo.lang, s.narration.trim()].join('␟')).digest('hex').slice(0, 10);
+const key = (s) => crypto.createHash('sha1').update([voiceKey(vo), s.narration.trim()].join('␟')).digest('hex').slice(0, 10);
 const narrated = sb.scenes.filter((s) => s.narration && s.narration.trim());
 const clips = Object.fromEntries(narrated.map((s) => {
   const h = key(s);
@@ -44,31 +48,19 @@ const clips = Object.fromEntries(narrated.map((s) => {
 }));
 const todo = args['mix-only'] ? [] : narrated.filter((s) => args.force || !fs.existsSync(clips[s.id].wav) || !fs.existsSync(clips[s.id].json));
 
-function runTTS(cmd, argv) {
-  return new Promise((resolve, reject) => {
-    const p = spawn(cmd, argv, { stdio: ['ignore', 'pipe', 'inherit'], shell: process.platform === 'win32' });
-    let out = ''; p.stdout.on('data', (d) => (out += d));
-    p.on('error', (e) => reject(new Error(`could not run ${cmd} (${e.message}). Install it: bash tts/install.sh (see references/install.md)`)));
-    p.on('close', (c) => (c === 0 ? resolve(out) : reject(new Error(`${cmd} exited ${c}`))));
-  });
-}
-
 if (todo.length) {
-  if (vo.provider !== 'kokoro') throw new Error(`audio.voiceover.provider "${vo.provider}" is not supported yet (use kokoro)`);
-  const job = { voice: vo.voice, speed: vo.speed, lang: vo.lang,
-    items: todo.map((s) => ({ id: s.id, text: s.narration.trim(), out: path.basename(clips[s.id].wav), timings: path.basename(clips[s.id].json) })) };
-  const jobFile = path.join(clipDir, 'job.json');
-  await writeJSON(jobFile, job);
-  console.log(`▶ synthesizing ${todo.length} clip(s) with kokoro-tts (voice ${vo.voice}, speed ${vo.speed})`);
-  await runTTS(process.env.VM_TTS || 'kokoro-tts', ['--batch', jobFile]);
-  await fsp.rm(jobFile, { force: true });
+  console.log(`▶ synthesizing ${todo.length} clip(s) with ${voiceLabel(vo)}${vo.provider === 'kokoro' ? `, speed ${vo.speed}` : ''}`);
+  if (vo.provider === 'breeze' || (vo.provider === 'localtts' && vo.engine === 'breeze')) {
+    console.log('  note: Breeze TTS 2 audio is licensed for research and non-commercial use only');
+  }
+  await synthesize(vo, todo.map((s) => ({ id: s.id, text: s.narration.trim(), wav: clips[s.id].wav, json: clips[s.id].json })), clipDir);
 } else console.log(`▶ narration: ${narrated.length} clip(s) cached`);
 
 // Drop clips from earlier wordings so the folder only holds what the storyboard says now.
 const keep = new Set(Object.values(clips).flatMap((c) => [path.basename(c.wav), path.basename(c.json)]));
 for (const f of await fsp.readdir(clipDir)) if (!keep.has(f)) await fsp.rm(path.join(clipDir, f), { force: true });
 
-const timing = { voice: vo.voice, speed: vo.speed, provider: vo.provider, scenes: {} };
+const timing = { voice: vo.voice, speed: vo.speed, provider: vo.provider, instruction: vo.instruction, scenes: {} };
 for (const s of narrated) {
   const t = await readJSON(clips[s.id].json);
   timing.scenes[s.id] = { file: path.relative(dir, clips[s.id].wav), duration: t.duration, words: t.words };

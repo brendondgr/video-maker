@@ -1,6 +1,6 @@
 ---
 name: video-maker
-description: Plan, narrate, illustrate, build, validate and render motion-graphics videos (explainers, paper/concept summaries, data stories, promos) as deterministic HTML + GSAP compositions, with step-by-step SVG diagrams timed to the narration, generated illustrations (bundled imagegen: Codex or local ComfyUI), local GPU text-to-speech (Kokoro), word-timed captions, sound effects and a mastered mix, rendered to 1080p/4K MP4 by either its own renderer or HyperFrames'. Includes the HyperFrames skills (motion rules, transitions, design presets, audio, media, CLI, Studio) as references. Use whenever the user asks to make, narrate, caption, animate or render a video, whether they give a shot list ("directed") or just hand over documents ("open"). Any length, aspect ratio or frame rate.
+description: Plan, narrate, illustrate, build, validate and render motion-graphics videos (explainers, paper/concept summaries, data stories, promos) as deterministic HTML + GSAP compositions, with step-by-step SVG diagrams timed to the narration, generated illustrations (bundled imagegen: Codex or local ComfyUI), local GPU text-to-speech (Kokoro by default; Breeze TTS 2 for cloned or designed voices, non-commercial), word-timed captions, sound effects and a mastered mix, rendered to 1080p/4K MP4 by either its own renderer or HyperFrames'. Includes the HyperFrames skills (motion rules, transitions, design presets, audio, media, CLI, Studio) as references. Use whenever the user asks to make, narrate, caption, animate or render a video, whether they give a shot list ("directed") or just hand over documents ("open"). Any length, aspect ratio or frame rate.
 ---
 
 # video-maker
@@ -35,13 +35,18 @@ their first argument and live in `$SKILL_DIR/engine/scripts/`.
 
 ```bash
 cd "$SKILL_DIR/engine" && npm install && npx playwright install chromium-headless-shell
-bash "$SKILL_DIR/tts/install.sh"                   # narration: GPU/CPU auto-detected (Windows: tts\install.ps1)
+bash "$SKILL_DIR/tts/setup.sh" --plan              # narration: inspects GPU/OS, explains the install plan
+bash "$SKILL_DIR/tts/setup.sh"                     # …then installs Kokoro (+ Breeze if accepted). Windows: tts\install.ps1
 node "$SKILL_DIR/engine/scripts/doctor.mjs" --tts  # ✖ must be fixed; ▲ = optional feature missing
 ```
 
 Requirements:
 - **Engine:** Node ≥ 18 (≥ 22 for HyperFrames), FFmpeg, Chromium.
-- **Narration:** `kokoro-tts`, a single environment at `~/venvs/kokoro` with a launcher on PATH.
+- **Narration:** `kokoro-tts` (default) and optionally `breeze-tts`, each in its own environment
+  with a launcher on PATH, recorded in `~/.config/tts-engines/engines.json`. Run `setup.sh --plan`
+  first and tell the user what it will install; install only once they agree, and install
+  Breeze only if they accept its research / non-commercial licence. An optional LocalTTS server
+  (`provider: "localtts"`) works too.
 - **Illustrations (optional):** `jq`, `python3`, plus at least one backend: the Codex CLI
   (`codex login`) or a local ComfyUI (`comfyui start`, port 8199 or `COMFY_URL`).
 
@@ -62,7 +67,7 @@ Pin the spec. When something is unstated, use the default below and say you assu
 | Length | open: 45–90 s · directed: as asked | about one scene per 4–7 s; narration ≈ 2.3–2.5 words/s (30 s ≈ 65 words, 60 s ≈ 125, 3 min ≈ 370, 10 min ≈ 1,300); over ~5 min see `long-form.md` |
 | Resolution | **1080p** (1920×1080) | the only other output is **4K** (`--4k`). Drafts keep full resolution. |
 | Aspect / fps | 16:9 · 30 fps | presets: `1080p 4k vertical square portrait cinema` |
-| Voice | narrated + captioned when `kokoro-tts` is installed | voice `af_heart` or `am_michael`, speed 1.0; silent if the user asks |
+| Voice | narrated + captioned when `kokoro-tts` is installed | voice `af_heart` or `am_michael`, speed 1.0; silent if the user asks. Breeze (`provider: "breeze"`) only when the user wants their own/a designed voice; it is non-commercial |
 | Style | dark, clean, one accent · or a HyperFrames preset (`design.mjs --list`) | light editorial presets suit papers |
 | Music | none | an optional bed from a user-supplied file (`audio.music.src`) |
 | Delivery | the user's videos folder if known, else `out/` | pass `render.mjs --deliver <dir>` |
@@ -218,12 +223,13 @@ Preview while building:
 ## 6 · Voice: synthesize, retime, caption, mix
 
 ```bash
-node "$SKILL_DIR/engine/scripts/voiceover.mjs" videos/<slug>         # --force, --voice, --speed, --no-retime
+node "$SKILL_DIR/engine/scripts/voiceover.mjs" videos/<slug>         # --force, --voice, --speed, --provider, --no-retime
 ```
 
 This one command does four things:
-- **Synthesize.** Each scene's narration goes through `kokoro-tts` (local GPU). Clips are cached
-  per line, so editing one line re-synthesizes one clip.
+- **Synthesize.** Each scene's narration goes through `audio.voiceover.provider`: `kokoro-tts`
+  (default), `breeze-tts` (a cloned/designed voice) or a LocalTTS server. Clips are cached per
+  line, so editing one line re-synthesizes one clip.
 - **Retime.** Each scene becomes as long as its narration needs, plus the pads and the next
   transition. Cued beats snap to their words and other beats scale. The silent plan is kept in
   `scene.silent`, so you can re-run.

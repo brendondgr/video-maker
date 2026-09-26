@@ -10,7 +10,11 @@ import { sceneTimes, timelineTotal } from './hf.mjs';
 export const SFX_DIR = path.join(SKILL_DIR, 'vendor', 'hyperframes', 'skills', 'media-use', 'audio', 'assets', 'sfx');
 
 export const VO_DEFAULTS = {
-  provider: 'kokoro', voice: 'af_heart', speed: 1.0, lang: 'a',
+  provider: 'kokoro',   // kokoro (default) | breeze (non-commercial) | localtts — see lib/tts.mjs
+  voice: 'af_heart', speed: 1.0, lang: 'a',
+  instruction: null,    // breeze/localtts: describe the voice (no voice) or the delivery (with a voice)
+  seed: 42, cfg_scale: null,
+  url: null, engine: 'auto',   // localtts: server URL (default $LOCALTTS_URL or :5040) and engine
   pad_before: 0.3,      // silence after the scene's own transition, before narration starts
   pad_after: 0.5,       // breathing room after the last word, before the next transition begins
   retime: 'fit',        // fit: duration = what narration needs · extend: never shorter than planned · off
@@ -20,7 +24,10 @@ export const VO_DEFAULTS = {
 export const CAPTION_DEFAULTS = { enabled: false, max_words: 6, min_gap: 0.15, min_card: 0.9, style: 'clean', position: 'bottom' };
 
 export function voSettings(sb) {
-  return Object.assign({}, VO_DEFAULTS, sb.audio?.voiceover || {});
+  const own = sb.audio?.voiceover || {};
+  const vo = Object.assign({}, VO_DEFAULTS, own);
+  if (vo.provider !== 'kokoro' && !('voice' in own)) vo.voice = null;   // af_heart is a Kokoro voice
+  return vo;
 }
 
 // ------------------------------------------------------------------ WAV (PCM16 / float32)

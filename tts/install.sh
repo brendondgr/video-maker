@@ -175,6 +175,9 @@ fi
 exec "\$KOKORO_HOME/bin/python" "\$KOKORO_HOME/kokoro_tts.py" "\$@"
 EOF
 chmod +x "$BIN/kokoro-tts"
+# Record it for breeze-tts / video-maker / LocalTTS (see registry.py).
+"$PY" "$HERE/registry.py" set kokoro python="$PY" home="$PREFIX" backend="$GPU" launcher="$BIN/kokoro-tts" \
+  torch="$("$PY" -c 'import torch; print(torch.__version__)')"
 case ":$PATH:" in *":$BIN:"*) ;; *) warn "$BIN is not on PATH — add it (fish: fish_add_path $BIN; bash/zsh: export PATH=\"$BIN:\$PATH\")" ;; esac
 
 say "smoke test (first run downloads the model, ~330 MB, and compiles GPU kernels)"
