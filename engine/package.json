@@ -1,0 +1,21 @@
+{
+  "name": "video-maker-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic HTML + GSAP motion-graphics engine: seekable timelines rendered frame-by-frame with headless Chromium and encoded with FFmpeg.",
+  "scripts": {
+    "doctor": "node scripts/doctor.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.5",
+    "@fontsource-variable/jetbrains-mono": "^5.2.5",
+    "@fontsource-variable/source-serif-4": "^5.2.5",
+    "d3": "7.9.0",
+    "gsap": "^3.15.0",
+    "katex": "^0.18.9",
+    "playwright": "^1.55.0",
+    "roughjs": "^4.6.6",
+    "three": "^0.186.1"
+  }
+}

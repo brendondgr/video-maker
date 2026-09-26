@@ -1,0 +1,6 @@
+/* Project styles. Colours and fonts come from storyboard.style as CSS variables
+   (--c-bg, --c-ink, --c-accent, --f-sans, ...). Size everything in var(--u)
+   (1% of the canvas short side) so the video survives an aspect-ratio change.
+   No @keyframes / animation / transition here — all motion lives on the GSAP timeline. */
+
+.kicker { color: var(--c-accent); }

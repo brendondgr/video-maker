@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>video-maker composition</title>
+  <!-- Three.js is ESM-only; the import map lets `await ctx.import('three')` resolve it. -->
+  <script type="importmap">
+  { "imports": {
+      "three": "/_engine/node_modules/three/build/three.module.js",
+      "three/addons/": "/_engine/node_modules/three/examples/jsm/"
+  } }
+  </script>
+  <link rel="stylesheet" href="/_engine/runtime/vm.css">
+  <link rel="stylesheet" href="style.css">
+  <!-- Loads GSAP + plugins, D3, KaTeX, rough.js, the runtime and helpers, then
+       one scenes/<id>.js per storyboard scene, then starts the timeline. -->
+  <script src="/_engine/runtime/boot.js"></script>
+</head>
+<body>
+  <div id="stage"></div>
+</body>
+</html>

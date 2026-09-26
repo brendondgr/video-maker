@@ -1,0 +1,36 @@
+{
+  "_comment": "Visual vocabulary. storyboard scene.visual.type should be one of these keys (or 'custom'). The validator warns on unknown types; add new types here when you build a reusable pattern. See references/visual-catalog.md for guidance.",
+  "types": {
+    "kinetic-title":   { "helpers": ["reveal", "enter"],             "libs": ["gsap/SplitText"], "use_when": "Opening hook, section headers, a single strong line." },
+    "statement":       { "helpers": ["reveal", "highlight", "swap"], "libs": ["gsap/SplitText"], "use_when": "One claim or takeaway on screen, with a highlighted key phrase." },
+    "bullet-build":    { "helpers": ["enter"],                       "libs": ["gsap"],           "use_when": "2–4 parallel points built one at a time. Never more than 4 on screen." },
+    "stat":            { "helpers": ["counter", "enter"],            "libs": ["gsap", "d3-format"], "use_when": "One to three headline numbers that deserve their own moment." },
+    "bar-chart":       { "helpers": ["barChart"],                    "libs": ["d3", "gsap"],     "use_when": "Comparing magnitudes across ≤ 8 categories." },
+    "line-chart":      { "helpers": ["lineChart", "tracer"],         "libs": ["d3", "gsap/DrawSVG"], "use_when": "A trend over an ordered x (time, iterations, dose). ≤ 4 series." },
+    "comparison":      { "helpers": ["enter", "counter"],            "libs": ["gsap"],           "use_when": "Two things side by side: before/after, A vs B." },
+    "diagram":         { "helpers": ["arrow", "draw", "enter"],      "libs": ["gsap/DrawSVG"],   "use_when": "Process, pipeline, architecture: boxes and arrows drawn in reading order." },
+    "timeline":        { "helpers": ["draw", "enter"],               "libs": ["gsap"],           "use_when": "Dated events along an axis." },
+    "network":         { "helpers": ["network"],                     "libs": ["d3-force (precomputed)"], "use_when": "Entities and relations; knowledge graphs; citation webs." },
+    "equation":        { "helpers": ["tex", "texSteps"],             "libs": ["katex"],          "use_when": "A formula, or a derivation revealed step by step." },
+    "field":           { "helpers": ["field"],                       "libs": ["d3-contour", "canvas"], "use_when": "A scalar function over 2D: heatmaps, loss landscapes, densities, PDE snapshots." },
+    "surface-3d":      { "helpers": ["scene3d", "surface"],          "libs": ["three"],          "use_when": "A surface, solid or point cloud where depth matters. Orbit slowly." },
+    "code":            { "helpers": ["typeOn", "enter"],             "libs": ["gsap"],           "use_when": "Short code (≤ 12 lines) with one line highlighted at a time." },
+    "quote":           { "helpers": ["reveal"],                      "libs": ["gsap/SplitText"], "use_when": "A quotation with attribution." },
+    "image":           { "helpers": ["kenBurns", "circle"],          "libs": ["gsap", "rough.js"], "use_when": "A figure, photo or screenshot from the sources; pan/zoom and annotate." },
+    "annotation":      { "helpers": ["circle", "sketch", "arrow"],   "libs": ["rough.js"],       "use_when": "Hand-drawn emphasis layered on another visual." },
+    "map":             { "helpers": ["draw"],                        "libs": ["d3-geo"],         "use_when": "Geography. Needs local GeoJSON/TopoJSON in assets/." },
+    "outro":           { "helpers": ["reveal", "enter"],             "libs": ["gsap"],           "use_when": "Summary, call to action, credits, sources." },
+    "custom":          { "helpers": [],                              "libs": [],                 "use_when": "Anything else. Describe it fully in visual.notes." }
+  },
+  "transitions": ["cut", "fade", "slide-left", "slide-up", "wipe", "iris", "zoom", "blur"],
+  "presets": {
+    "1080p":    { "width": 1920, "height": 1080, "fps": 30 },
+    "720p":     { "width": 1280, "height": 720,  "fps": 30 },
+    "1440p":    { "width": 2560, "height": 1440, "fps": 30 },
+    "4k":       { "width": 1920, "height": 1080, "fps": 30, "render_height": 2160, "_note": "author at 1080p, render with --height 2160" },
+    "vertical": { "width": 1080, "height": 1920, "fps": 30 },
+    "square":   { "width": 1080, "height": 1080, "fps": 30 },
+    "portrait": { "width": 1080, "height": 1350, "fps": 30 },
+    "cinema":   { "width": 1920, "height": 816,  "fps": 24 }
+  }
+}

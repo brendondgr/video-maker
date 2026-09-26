@@ -1,0 +1,4 @@
+/* Demo project styles (sizes in var(--u); no CSS animation). */
+.eq { font-size: calc(var(--u) * 10); display: flex; align-items: center; }
+.eq .katex { font-size: 1em; }
+.eq-labels { display: flex; gap: calc(var(--u) * 6); margin-top: calc(var(--u) * 2); }

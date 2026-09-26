@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "meta": {
+    "title": "Gradient descent in 45 seconds",
+    "slug": "gradient-descent",
+    "mode": "directed",
+    "audience": "Curious newcomers to machine learning; no calculus assumed",
+    "goal": "Viewer can say, in one sentence, how a model improves: measure the error, find the downhill direction, take a small step, repeat.",
+    "tone": "calm, precise, a little playful",
+    "sources": []
+  },
+  "canvas": { "width": 1920, "height": 1080, "fps": 30, "background": "#0b0f17", "safe_area": 0.05 },
+  "target_duration": 50,
+  "style": {
+    "palette": {
+      "bg": "#0b0f17", "surface": "#131a26", "ink": "#eef2f8", "muted": "#93a0b4", "line": "#2a3446",
+      "accent": "#5eb0ff", "accent-2": "#ffb454", "accent-3": "#7ee0a1", "warn": "#ff6b6b"
+    },
+    "fonts": { "sans": "'Inter Variable'", "mono": "'JetBrains Mono Variable'", "serif": "'Source Serif 4 Variable'" },
+    "motion": { "ease": "power3.out", "base": 0.7, "exit": 0.45 }
+  },
+  "audio": { "voiceover": { "enabled": false }, "music": null },
+  "rules": { "max_words_per_second": 3.2, "min_scene_duration": 1.5, "max_scene_duration": 20 },
+  "assets": { "scripts": ["lib/loss.js"] },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration": 4.5,
+      "purpose": "Pose the question the video answers.",
+      "on_screen_text": ["Gradient descent in 45 seconds", "How does a model learn?"],
+      "narration": "How does a model actually learn? One rule, repeated billions of times.",
+      "visual": { "type": "kinetic-title", "notes": "Kicker label fades in, question rises word by word; 'learn' gets the accent colour." },
+      "beats": [ { "id": "kicker", "t": 0.2 }, { "id": "title", "t": 0.6 } ]
+    },
+    {
+      "id": "scale",
+      "duration": 4.5,
+      "purpose": "Stakes: modern models have enormous numbers of parameters, all tuned by the same rule.",
+      "on_screen_text": ["175,000,000,000", "parameters", "each nudged by one simple rule"],
+      "visual": { "type": "stat", "notes": "Counter climbs to 175 billion; caption underneath." },
+      "beats": [ { "id": "count", "t": 0.2 }, { "id": "caption", "t": 2.0 } ],
+      "transition_in": { "type": "fade", "duration": 0.4 }
+    },
+    {
+      "id": "rule",
+      "duration": 6,
+      "purpose": "Show the update rule and name each term.",
+      "on_screen_text": ["The update rule", "step size", "downhill direction"],
+      "visual": { "type": "equation", "notes": "KaTeX equation centred; hand-drawn circles around η and ∇L with labels." },
+      "beats": [ { "id": "eq", "t": 0.3 }, { "id": "eta", "t": 1.8 }, { "id": "grad", "t": 3.0 } ],
+      "transition_in": { "type": "slide-left", "duration": 0.6 }
+    },
+    {
+      "id": "landscape",
+      "duration": 7,
+      "purpose": "The loss is a landscape; each step walks downhill.",
+      "on_screen_text": ["The loss landscape", "Each step walks downhill"],
+      "visual": { "type": "field", "notes": "Filled contours of the loss; a dot follows the precomputed descent path, the path draws behind it." },
+      "beats": [ { "id": "field", "t": 0.0 }, { "id": "walk", "t": 1.2 }, { "id": "label", "t": 4.6 } ],
+      "transition_in": { "type": "fade", "duration": 0.5 }
+    },
+    {
+      "id": "surface",
+      "duration": 6,
+      "purpose": "Same landscape in 3D, so 'downhill' is literal.",
+      "on_screen_text": ["Same landscape, in 3D"],
+      "visual": { "type": "surface-3d", "notes": "Three.js surface of the same loss, slow orbit, ball rolling down the path." },
+      "beats": [ { "id": "orbit", "t": 0.0 }, { "id": "roll", "t": 1.0 } ],
+      "transition_in": { "type": "iris", "duration": 0.7 }
+    },
+    {
+      "id": "rates",
+      "duration": 6.5,
+      "purpose": "Step size matters: too small is slow, too large diverges.",
+      "on_screen_text": ["Step size matters", "too small", "just right", "too large", "iteration", "loss"],
+      "visual": { "type": "line-chart", "notes": "Three loss curves drawn in sequence; 'too large' dashed in warning colour." },
+      "beats": [ { "id": "chart", "t": 0.3 } ],
+      "transition_in": { "type": "wipe", "duration": 0.6 }
+    },
+    {
+      "id": "optimizers",
+      "duration": 5.5,
+      "purpose": "Refinements of the same idea converge faster.",
+      "on_screen_text": ["Steps to converge", "SGD", "Momentum", "Adam"],
+      "visual": { "type": "bar-chart", "notes": "Horizontal bars, Adam highlighted. Illustrative numbers, labelled as such." },
+      "beats": [ { "id": "bars", "t": 0.4 } ],
+      "transition_in": { "type": "fade", "duration": 0.4 }
+    },
+    {
+      "id": "loop",
+      "duration": 6.5,
+      "purpose": "The whole training loop in one picture.",
+      "on_screen_text": ["The training loop", "Data", "Model", "Loss", "Gradient", "Update"],
+      "visual": { "type": "diagram", "notes": "Five boxes left-to-right, arrows draw in reading order, a curved arrow loops back from Update to Model." },
+      "beats": [ { "id": "boxes", "t": 0.4 }, { "id": "back", "t": 3.8 } ],
+      "transition_in": { "type": "slide-up", "duration": 0.6 }
+    },
+    {
+      "id": "ideas",
+      "duration": 5,
+      "purpose": "Where this idea shows up next.",
+      "on_screen_text": ["Gradient descent", "Backprop", "Learning rate", "Momentum", "Adam", "Loss", "Batch"],
+      "visual": { "type": "network", "notes": "Concept map with 'Gradient descent' at the centre; nodes pop in, links draw." },
+      "beats": [ { "id": "graph", "t": 0.3 } ],
+      "transition_in": { "type": "zoom", "duration": 0.5 }
+    },
+    {
+      "id": "outro",
+      "duration": 4,
+      "purpose": "The takeaway in four words.",
+      "on_screen_text": ["Measure. Step. Repeat.", "That is learning."],
+      "visual": { "type": "outro", "notes": "Three words pop in sequence; tagline fades under." },
+      "beats": [ { "id": "words", "t": 0.3 }, { "id": "tag", "t": 1.9 } ],
+      "transition_in": { "type": "blur", "duration": 0.5 }
+    }
+  ]
+}

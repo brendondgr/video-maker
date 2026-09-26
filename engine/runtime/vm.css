@@ -1,0 +1,103 @@
+/* video-maker base stylesheet.
+ * Design tokens arrive as CSS variables from storyboard.style (palette -> --c-*,
+ * fonts -> --f-*). --u is 1/100 of the canvas short side: size type and spacing
+ * in calc(var(--u) * n) so the same scene code works at 16:9, 9:16 and 1:1.
+ */
+@import url('/_engine/node_modules/@fontsource-variable/inter/index.css');
+@import url('/_engine/node_modules/@fontsource-variable/jetbrains-mono/index.css');
+@import url('/_engine/node_modules/@fontsource-variable/source-serif-4/index.css');
+@import url('/_engine/node_modules/katex/dist/katex.min.css');
+
+:root {
+  --c-bg: #0b0f17;
+  --c-surface: #131a26;
+  --c-ink: #eef2f8;
+  --c-muted: #93a0b4;
+  --c-line: #2a3446;
+  --c-accent: #5eb0ff;
+  --c-accent-2: #ffb454;
+  --c-accent-3: #7ee0a1;
+  --c-warn: #ff6b6b;
+  --f-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  --f-serif: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, serif;
+  --u: 10.8px;
+  --safe: 5%;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #000; }
+body { font-family: var(--f-sans); color: var(--c-ink); -webkit-font-smoothing: antialiased; }
+
+#stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-family: var(--f-sans);
+  font-size: calc(var(--u) * 3);
+  line-height: 1.2;
+  transform-origin: 0 0;
+  contain: strict;
+}
+.vm-render #stage { position: absolute; left: 0; top: 0; }
+
+.vm-scene {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  overflow: hidden;
+  background: var(--c-bg);
+}
+.vm-scene.is-transparent { background: transparent; }
+
+/* The title/action-safe frame. Put text inside .safe so layout checks pass. */
+.safe { position: absolute; inset: var(--safe); }
+.center { display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+.stack { display: flex; flex-direction: column; gap: calc(var(--u) * 2); }
+.row { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(var(--u) * 1.5) calc(var(--u) * 3); align-items: center; }
+.vm-svg, .vm-canvas { position: absolute; left: 0; top: 0; }
+
+/* Type scale in units of --u */
+.t-hero    { font-size: calc(var(--u) * 11); font-weight: 760; letter-spacing: -0.035em; line-height: 0.98; }
+.t-display { font-size: calc(var(--u) * 8);  font-weight: 720; letter-spacing: -0.03em;  line-height: 1.02; }
+.t-title   { font-size: calc(var(--u) * 5.6); font-weight: 680; letter-spacing: -0.02em; line-height: 1.08; }
+.t-head    { font-size: calc(var(--u) * 4);  font-weight: 640; letter-spacing: -0.01em; line-height: 1.15; }
+.t-body    { font-size: calc(var(--u) * 3);  font-weight: 420; line-height: 1.35; }
+.t-small   { font-size: calc(var(--u) * 2.4); font-weight: 460; line-height: 1.35; }
+.t-label   { font-size: calc(var(--u) * 2.6); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.t-mono    { font-family: var(--f-mono); }
+.t-serif   { font-family: var(--f-serif); }
+.muted  { color: var(--c-muted); }
+.accent { color: var(--c-accent); }
+.accent-2 { color: var(--c-accent-2); }
+.accent-3 { color: var(--c-accent-3); }
+.tabular { font-variant-numeric: tabular-nums; }
+
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: calc(var(--u) * 1.6);
+  padding: calc(var(--u) * 3);
+}
+.pill {
+  display: inline-block;
+  padding: calc(var(--u) * 0.7) calc(var(--u) * 1.8);
+  border-radius: 999px;
+  border: 1px solid var(--c-line);
+  background: var(--c-surface);
+}
+
+/* SplitText output: keep line masks clean */
+.vm-line-mask { overflow: hidden; display: block; padding-bottom: 0.08em; margin-bottom: -0.08em; }
+
+.vm-placeholder {
+  position: absolute; inset: 10%; border: 3px dashed var(--c-warn); border-radius: 16px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  color: var(--c-warn); font-family: var(--f-mono); font-size: calc(var(--u) * 3);
+}
+.vm-placeholder small { color: var(--c-muted); }
+#vm-fatal { position: fixed; inset: 20px; color: #ff8080; background: #1a0b0b; padding: 20px; white-space: pre-wrap; z-index: 99; font: 14px/1.4 monospace; }
+
+/* Nothing may animate on its own: CSS animation/transition would break determinism. */
+.vm-render *, .vm-render *::before, .vm-render *::after { animation: none !important; transition: none !important; caret-color: transparent; }

@@ -1,0 +1,12 @@
+engine/node_modules/
+**/out/
+**/qa/
+_to_delete/
+
+# OS / editor / tooling noise
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vscode/
+.idea/
