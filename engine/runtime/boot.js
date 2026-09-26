@@ -26,7 +26,8 @@
     'runtime/helpers/text.js',
     'runtime/helpers/data.js',
     'runtime/helpers/science.js',
-    'runtime/helpers/three.js'
+    'runtime/helpers/three.js',
+    'runtime/helpers/captions.js'
   ].map(function (p) { return E + p; });
 
   function load(src) {
@@ -61,7 +62,12 @@
       try { await load(files[k]); }
       catch (e) { console.error('[boot] ' + e.message); (window.__vmBootErrors = window.__vmBootErrors || []).push(e.message); }
     }
-    var api = await window.VM.start({ storyboard: sb });
+    var captions = null;
+    if (sb.audio && sb.audio.captions && sb.audio.captions.enabled) {
+      var cr = await fetch('audio/captions.json', { cache: 'no-store' }).catch(function () { return null; });
+      if (cr && cr.ok) captions = (await cr.json()).groups;
+    }
+    var api = await window.VM.start({ storyboard: sb, captions: captions });
     if (api && window.__vmBootErrors) api.errors.push.apply(api.errors, window.__vmBootErrors);
   }
 

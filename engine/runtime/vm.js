@@ -40,6 +40,7 @@
   var RENDER = !params.has('preview');
   var builders = {};
   var order = [];
+  var overlays = {};
 
   // ---------------------------------------------------------------- utilities
   function hashString(s) {
@@ -151,6 +152,14 @@
     /** Add a transition type usable from storyboard `transition_in.type`. */
     transition: function (name, fn) { TRANSITIONS[name] = fn; },
 
+    /**
+     * Register a whole-video overlay layer (captions, watermark, progress bar…). Its builder
+     * gets a ctx like a scene's, but ctx.tl spans the full timeline (time 0 = video start).
+     * Enabled overlays: storyboard.overlays: ["name" | {name, …options}] plus captions when
+     * audio.captions.enabled. build(ctx, data) receives options (or the caption groups).
+     */
+    overlay: function (name, def) { overlays[name] = typeof def === 'function' ? { build: def } : def; },
+
     start: function (opts) { return start(opts || {}).catch(fail); }
   };
 
@@ -254,6 +263,28 @@
     }
 
     var total = cursor;
+
+    // Whole-video overlays sit above every scene and run on composition time.
+    var overlayRecords = [];
+    var wanted = (sb.overlays || []).map(function (o) { return typeof o === 'string' ? { name: o } : o; });
+    if (sb.audio && sb.audio.captions && sb.audio.captions.enabled) {
+      if (opts.captions) wanted.push({ name: 'captions', data: opts.captions });
+      else warnings.push('audio.captions.enabled but audio/captions.json is missing — run voiceover.mjs');
+    }
+    for (var oi = 0; oi < wanted.length; oi++) {
+      var ow = wanted[oi], odef = overlays[ow.name];
+      if (!odef) { errors.push('no overlay registered as "' + ow.name + '"'); continue; }
+      var oEl = el('section', { class: 'vm-overlay', 'data-overlay': ow.name }, stage);
+      oEl.style.zIndex = String(1000 + oi);
+      var otl = gsap.timeline({ defaults: tlDefaults }), oFns = [];
+      var octx = makeCtx({ id: 'overlay-' + ow.name, duration: total, beats: [] }, oEl, otl, oFns, sb, canvas, 0);
+      try { await odef.build(octx, ow.data !== undefined ? ow.data : ow); }
+      catch (e) { errors.push('overlay "' + ow.name + '" build threw: ' + (e && e.message || e)); console.error(e); }
+      otl.set({}, {}, total);
+      master.add(otl, 0);
+      overlayRecords.push({ id: ow.name, el: oEl, frameFns: oFns });
+    }
+
     // Guarantee the master's duration equals the storyboard's total.
     master.set({}, {}, total);
 
@@ -287,6 +318,12 @@
           }
         }
       }
+      for (var q = 0; q < overlayRecords.length; q++) {
+        for (var z = 0; z < overlayRecords[q].frameFns.length; z++) {
+          try { overlayRecords[q].frameFns[z](t, t); }
+          catch (e) { var om = 'onFrame error in overlay "' + overlayRecords[q].id + '": ' + (e && e.message || e); if (errors.indexOf(om) < 0) errors.push(om); }
+        }
+      }
       lastT = t;
       return t;
     }
@@ -303,6 +340,7 @@
       height: H,
       frames: Math.max(1, Math.round(total * FPS)),
       scenes: sceneRecords.map(function (r) { return { id: r.id, start: r.start, end: r.end, duration: r.duration }; }),
+      overlays: overlayRecords.map(function (r) { return r.id; }),
       storyboard: sb,
       warnings: warnings,
       errors: errors,

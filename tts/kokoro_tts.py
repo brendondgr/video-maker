@@ -29,6 +29,7 @@ from pathlib import Path
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 # AMD/ROCm: reuse tuned kernels instead of re-searching for every new input length.
 os.environ.setdefault("MIOPEN_FIND_MODE", "2")
+os.environ.setdefault("MIOPEN_LOG_LEVEL", "3")   # errors only; hides harmless "db unreadable" warnings
 warnings.filterwarnings("ignore")
 
 SAMPLE_RATE = 24_000
@@ -87,7 +88,12 @@ class Synth:
                 continue
             a = r.audio.detach().cpu().numpy().astype("float32")
             for t in r.tokens or []:
-                if t.start_ts is None or t.end_ts is None or not any(ch.isalnum() for ch in t.text):
+                if not any(ch.isalnum() for ch in t.text):
+                    # Punctuation rides on the previous word, so captions can break on sentences.
+                    if words and t.text.strip():
+                        words[-1]["w"] += t.text.strip()
+                    continue
+                if t.start_ts is None or t.end_ts is None:
                     continue
                 words.append({"w": t.text, "start": round(offset + t.start_ts, 3), "end": round(offset + t.end_ts, 3)})
             chunks.append(a)

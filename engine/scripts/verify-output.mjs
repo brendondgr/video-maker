@@ -37,6 +37,10 @@ export async function verifyOutput(dir, video, opts = {}) {
   if (opts['expect-height'] && v.height !== +opts['expect-height']) add('error', 'RESOLUTION', `height ${v.height}, expected ${opts['expect-height']}`);
   if (v.pix_fmt !== 'yuv420p' && v.codec_name === 'h264') add('warn', 'PIXFMT', `pix_fmt ${v.pix_fmt}; yuv420p plays everywhere`);
   if (sb.audio?.voiceover?.enabled && !a) add('error', 'AUDIO', 'voice-over enabled in storyboard but file has no audio stream');
+  if (a && !partial) {
+    const ad = +a.duration || dur;
+    if (Math.abs(ad - total) > 0.1) add('warn', 'AUDIO_LENGTH', `audio ${fmtTime(ad)} vs timeline ${fmtTime(total)}`);
+  }
   add('info', 'FILE', `${v.codec_name} ${v.width}×${v.height} ${fps.toFixed(2)}fps ${fmtTime(dur)} ${frames} frames${a ? ' + ' + a.codec_name + ' audio' : ''}, ${(+probe.format.size / 1e6).toFixed(2)} MB`);
 
   // Black and frozen stretches, mapped back to scenes.

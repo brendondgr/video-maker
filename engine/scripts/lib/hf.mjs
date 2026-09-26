@@ -66,7 +66,12 @@ function syncRootAttributes(dir, sb) {
   const c = Object.assign({ width: 1920, height: 1080, fps: 30 }, sb.canvas || {});
   const attrs = `id="stage" data-composition-id="main" data-width="${c.width}" data-height="${c.height}" ` +
     `data-duration="${timelineTotal(sb)}" data-fps="${c.fps}"`;
-  const next = html.replace(/<div\s+id="stage"[^>]*>/, `<div ${attrs}>`);
+  // The mastered mix (voiceover.mjs) plays as one HyperFrames audio clip, so HF renders and
+  // Studio hear exactly what render.mjs muxes.
+  const T = timelineTotal(sb);
+  const mix = fs.existsSync(path.join(dir, 'audio', 'mix.wav'))
+    ? `\n    <audio id="vm-mix" src="audio/mix.wav" data-start="0" data-duration="${T}" data-volume="1" data-track-index="0"></audio>\n  ` : '';
+  const next = html.replace(/<div\s+id="stage"[^>]*>[\s\S]*?<\/div>/, `<div ${attrs}>${mix}</div>`);
   let out = next;
   if (!/__timelines\s*=/.test(out)) {
     out = out.replace(/(\s*)<script src="[^"]*boot\.js"><\/script>/,

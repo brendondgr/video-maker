@@ -99,3 +99,21 @@ body { font-family: var(--f-sans); color: var(--c-ink); -webkit-font-smoothing: 
 
 /* Nothing may animate on its own: CSS animation/transition would break determinism. */
 .vm-render *, .vm-render *::before, .vm-render *::after { animation: none !important; transition: none !important; caret-color: transparent; }
+
+/* Whole-video overlays (VM.overlay) and the captions overlay. */
+.vm-overlay { position: absolute; inset: 0; pointer-events: none; }
+.vm-captions { position: absolute; left: var(--safe); right: var(--safe); display: flex; justify-content: center; }
+.vm-captions.is-bottom { bottom: calc(var(--u) * 5); }
+.vm-captions.is-top { top: calc(var(--u) * 5); }
+.vm-cap {
+  position: absolute; bottom: 0; max-width: 78%;
+  visibility: hidden; opacity: 0;
+  padding: calc(var(--u) * 0.7) calc(var(--u) * 1.6);
+  border-radius: calc(var(--u) * 1);
+  background: rgba(6, 9, 15, 0.72);
+  color: var(--c-ink);
+  font-weight: 560; line-height: 1.25; letter-spacing: -0.005em; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.vm-captions.is-top .vm-cap { bottom: auto; top: 0; }
+.vm-captions.is-clean .vm-cap-w { opacity: 0.55; }

@@ -6,6 +6,8 @@
 //                             [--codec h264|h265] [--audio voice.wav] [--out out/video.mp4] [--chrome path]
 //                             [--engine vm|hf]   (hf: HyperFrames renderer; also --format mov|gif, --docker, --gpu)
 //                             [--4k]             (2× the canvas, e.g. 3840×2160; default is the canvas size)
+//                             [--deliver ~/Videos/CustomSkill/<slug>]  (copy mp4 + captions + poster there)
+//                             [--no-audio]       (ignore audio/mix.wav)
 //
 // Every frame i is produced by window.__vm.seek(i / fps) followed by a screenshot, so
 // output is deterministic and workers can render disjoint frame ranges in parallel.
@@ -37,6 +39,11 @@ async function main() {
   if (scale !== 1 && scale !== 2) throw new Error(`output must be native (${canvas.width}×${canvas.height}) or 4K (--4k / --height ${canvas.height * 2}); got scale ${scale}`);
   const format = args.format || 'mp4';
   const codec = args.codec || 'h264';
+  // The mastered mix from voiceover.mjs is used automatically (vm engine muxes it; the hf engine
+  // plays it from the page's <audio id="vm-mix">). --audio overrides, --no-audio renders silent.
+  const mixFile = path.join(dir, 'audio', 'mix.wav');
+  if (args['no-audio']) delete args.audio;
+  else if (!args.audio && (args.engine || 'vm') === 'vm' && fs.existsSync(mixFile)) args.audio = mixFile;
   if ((args.engine || 'vm') === 'hf') return renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format });
   if (args.engine && args.engine !== 'vm') throw new Error('--engine must be vm or hf');
   if (!(await which('ffmpeg')) && format !== 'png') throw new Error('ffmpeg not found on PATH');
@@ -124,6 +131,7 @@ async function main() {
       const size = (await fsp.stat(out)).size;
       console.log(`  ${(size / 1e6).toFixed(2)} MB — verify with: node ${path.relative(process.cwd(), path.join(path.dirname(fileURLToPath(import.meta.url)), 'verify-output.mjs'))} ${path.relative(process.cwd(), dir) || '.'} ${path.relative(process.cwd(), out)}${suffix ? ' --partial' : ''}${scale !== 1 ? ' --expect-height ' + outH : ''}`);
     }
+    return out;
   } finally {
     await browser.close();
     await server.close();
@@ -143,7 +151,7 @@ async function renderRange({ browser, server, canvas, scale, fps, a, b, q, seg, 
         ? ['-c:v', 'libx265', '-crf', String(q.crf + 2), '-preset', q.preset, '-tag:v', 'hvc1']
         : ['-c:v', 'libx264', '-crf', String(q.crf), '-preset', q.preset, '-profile:v', 'high'];
     const argv = ['-y', '-v', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', q.img === 'png' ? 'png' : 'mjpeg', '-i', '-',
-      '-vf', `scale=${outW}:${outH}:flags=lanczos,format=yuv420p`, ...vcodec, '-r', String(fps), '-g', String(fps * 2), seg];
+      '-vf', `scale=${outW}:${outH}:flags=lanczos:out_range=tv,format=yuv420p`, '-pix_fmt', 'yuv420p', '-color_range', 'tv', ...vcodec, '-r', String(fps), '-g', String(fps * 2), seg];
     ff = spawn('ffmpeg', argv, { stdio: ['pipe', 'ignore', 'pipe'] });
     let err = '';
     ff.stderr.on('data', (d) => (err += d));
@@ -202,6 +210,30 @@ async function renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format
     await fsp.rm(tmp, { recursive: true, force: true });
   }
   console.log(`✔ wrote ${out}`);
+  return out;
 }
 
-main().catch((e) => { console.error('\n✖ render failed:', e.message); process.exit(1); });
+// --deliver <dir>: copy the finished file plus its sidecars (captions, poster) somewhere the user
+// can find them. Poster = the frame at storyboard meta.poster_t (default: 40 % in).
+async function deliver(out, dir, sb, dest) {
+  const target = path.resolve(dest);
+  await fsp.mkdir(target, { recursive: true });
+  const base = path.basename(out).replace(/\.[^.]+$/, '');
+  const copies = [[out, path.join(target, path.basename(out))]];
+  for (const ext of ['srt', 'vtt']) {
+    const f = path.join(dir, 'audio', `captions.${ext}`);
+    if (fs.existsSync(f)) copies.push([f, path.join(target, `${base}.${ext}`)]);
+  }
+  for (const [a, b] of copies) if (path.resolve(a) !== b) await fsp.copyFile(a, b);
+  const total = +(await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', out])).out.trim();
+  const t = sb.meta?.poster_t ?? total * 0.4;
+  await run('ffmpeg', ['-y', '-v', 'error', '-ss', String(t), '-i', out, '-frames:v', '1', path.join(target, `${base}-poster.png`)]);
+  console.log(`✔ delivered to ${target}: ${copies.length} file(s) + poster`);
+}
+
+main().then(async (out) => {
+  const args = parseArgs();
+  if (!args.deliver || !out || args.format === 'png') return;
+  const dir = projectDir(args);
+  await deliver(out, dir, await readJSON(path.join(dir, 'storyboard.json')), args.deliver);
+}).catch((e) => { console.error('\n✖ render failed:', e.message); process.exit(1); });

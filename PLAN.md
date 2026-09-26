@@ -78,21 +78,21 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
       same audio, QA and render steps
 
 ### Phase 3 — Voice, mix, captions
-- [ ] `scripts/voiceover.mjs`: storyboard narration → `kokoro-tts --batch` (cached by text/voice
-      hash) → `audio/timing.json`; fallback providers `hyperframes tts` + `transcribe`
-- [ ] Retime: scene duration fits its narration (+ pads, next transition); beats with
+- [x] `scripts/voiceover.mjs`: storyboard narration → `kokoro-tts --batch` (cached by text/voice
+      hash) → `audio/timing.json` (fallback providers: later)
+- [x] Retime: scene duration fits its narration (+ pads, next transition); beats with
       `cue: "word:N" | "text:phrase"` snap to word times; others scale; silent values kept in
       `scene.silent` so retiming is repeatable
-- [ ] Mix plan `audio/mix.json` (voice clips, BGM bed, SFX cues) with speech-span ducking
-      (ported from HF `duck.mjs`) and two-pass loudnorm (−16 LUFS, TP −1.5)
-- [ ] Renderers: `vm` mixes with FFmpeg; `hf` gets generated `<audio id>` elements with
-      `data-volume` / `data-automation`
-- [ ] Bundle HF's 19 SFX (Pixabay licence) + manifest; `sfx` cues on beats/transitions
-- [ ] `VMX.captions` (grouping, emphasis, hard kill at group end, per HF caption rules) +
-      `audio/captions.srt/.vtt`
-- [ ] Optional BGM: user file, MusicGen on the GPU env (weights are CC-BY-NC — flagged), or
+- [x] Mix `audio/mix.wav` (voice, optional BGM bed sidechain-ducked per HF operations.md, SFX
+      cues) with two-pass loudnorm (−16 LUFS, TP −1.5) — verified −16.0 LUFS / −1.5 dBTP
+- [x] Renderers: `vm` muxes the mix automatically; `hf` plays it as `<audio id="vm-mix">` synced
+      into the page (identical sound on both engines)
+- [x] HF's 19 SFX (Pixabay licence, vendored in media-use) + manifest; `scene.sfx` cues on beats
+- [x] `VMX.captions` (grouping, emphasis, hard kill at group end, per HF caption rules) +
+      `audio/captions.srt/.vtt` — built as the first `VM.overlay` (whole-video layers)
+- [~] Optional BGM: user file (done: `audio.music.src`), MusicGen on the GPU env (weights are CC-BY-NC — flagged), or
       `media-use resolve --type bgm` with a HeyGen account
-- [ ] Gates: narration never cut by a scene end; audio/video duration match; loudness in range
+- [x] Gates: narration never cut by a scene end; audio/video duration match; loudness in range
 
 ### Phase 4 — Motion and design
 - [ ] Transitions: `blur-crossfade`, `squeeze`, `diamond-iris`, `diagonal-split`,
@@ -122,7 +122,8 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
 - [ ] 60 s — how it works (agents + tournament) + the three validations
 - [ ] 5 min — chapters: problem · architecture · tournament/Elo scaling · expert evaluation ·
       AML · liver fibrosis · AMR · limitations · outlook
-- [ ] Each: narrated (kokoro-tts), captioned, QA-passing, 1080p30 MP4 + SRT
+- [ ] Each: narrated (kokoro-tts), captioned, QA-passing, 1080p30 MP4 + SRT, delivered to
+      `~/Videos/CustomSkill/` via `render.mjs --deliver`
 
 ## Later / optional
 - Per-scene sub-composition export so HyperFrames Studio shows one editable row per scene

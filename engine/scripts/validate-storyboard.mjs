@@ -101,6 +101,24 @@ export async function validateStoryboard(dir, { planOnly = false } = {}) {
     }
   });
 
+  // Voice-over: once narration is synthesized (voiceover.mjs), every scene must be long enough
+  // for its clip, and the mix must be newer than the last storyboard edit.
+  const timingFile = path.join(dir, 'audio', 'timing.json');
+  if (vo && fs.existsSync(timingFile)) {
+    const { requiredDuration } = await import('./lib/audio.mjs');
+    const timing = await readJSON(timingFile);
+    scenes.forEach((s, i) => {
+      const c = timing.scenes?.[s.id];
+      if (s.narration && !c) add('warn', 'VOICE_STALE', 'narration not synthesized yet — run voiceover.mjs', { scene: s.id });
+      if (c && +s.duration + 1e-3 < requiredDuration(sb, i, c.duration)) {
+        add('error', 'NARRATION_CUT', `scene is ${s.duration}s but its ${c.duration.toFixed(2)}s narration needs ${requiredDuration(sb, i, c.duration).toFixed(2)}s — re-run voiceover.mjs (retime)`, { scene: s.id });
+      }
+    });
+    const mix = path.join(dir, 'audio', 'mix.wav');
+    if (!fs.existsSync(mix)) add('warn', 'MIX', 'audio/mix.wav missing — run voiceover.mjs');
+    else if (fs.statSync(mix).mtimeMs + 1000 < fs.statSync(path.join(dir, 'storyboard.json')).mtimeMs) add('warn', 'MIX', 'storyboard.json changed after the last mix — re-run voiceover.mjs');
+  } else if (vo && !planOnly) add('warn', 'VOICE_STALE', 'voice-over enabled but not synthesized yet — run voiceover.mjs');
+
   // Orphan scene files
   if (!planOnly && fs.existsSync(path.join(dir, 'scenes'))) {
     const used = new Set(scenes.map((s) => path.normalize(s.module || `scenes/${s.id}.js`)));

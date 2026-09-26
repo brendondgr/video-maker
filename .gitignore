@@ -57,3 +57,6 @@ desktop.ini
 
 # --- video-maker: per-project link to the engine (created by the scripts) ---
 **/_engine
+
+# --- voice-over audio (re-created by voiceover.mjs; timing/captions JSON stay tracked) ---
+**/audio/**/*.wav

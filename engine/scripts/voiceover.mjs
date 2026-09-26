@@ -1,0 +1,135 @@
+#!/usr/bin/env node
+// Narrate, retime, caption and mix a project.
+//
+//   node voiceover.mjs <project> [--force] [--no-retime] [--mix-only] [--voice am_michael] [--speed 1.05]
+//
+// 1. Synthesize: every scene's `narration` → audio/vo/<scene>-<hash>.wav + word timings, through
+//    `kokoro-tts --batch` (local GPU Kokoro; VM_TTS overrides the command). Clips are cached by
+//    text/voice/speed, so editing one line re-synthesizes one clip.
+// 2. Retime (audio.voiceover.retime = fit | extend | off): each scene's duration becomes what its
+//    narration needs; beats with `cue` snap to words, other beats scale. The silent plan is kept
+//    in scene.silent. storyboard.json is rewritten.
+// 3. Assemble audio/voiceover.wav (clips placed at scene start + transition + pad_before), write
+//    audio/timing.json and, when audio.captions.enabled, audio/captions.{json,srt,vtt}.
+// 4. Mix audio/mix.wav: voice + optional music bed (ducked) + scene.sfx cues, mastered with
+//    two-pass loudnorm. render.mjs uses it automatically; HyperFrames gets it as <audio id="vm-mix">.
+import fs from 'node:fs';
+import fsp from 'node:fs/promises';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
+import { parseArgs, projectDir, readJSON, writeJSON, printFindings, fmtTime } from './lib/common.mjs';
+import { syncProject, timelineTotal, sceneTimes } from './lib/hf.mjs';
+import { voSettings, retime, readWav, writeWav, narrationLead, captionGroups, toSRT, toVTT, sfxCues, buildMix, requiredDuration } from './lib/audio.mjs';
+
+const args = parseArgs();
+const dir = projectDir(args);
+const sbPath = path.join(dir, 'storyboard.json');
+const sb = await readJSON(sbPath);
+sb.audio = sb.audio || {};
+sb.audio.voiceover = Object.assign({ enabled: true }, sb.audio.voiceover || {});
+if (args.voice) sb.audio.voiceover.voice = args.voice;
+if (args.speed) sb.audio.voiceover.speed = +args.speed;
+const vo = voSettings(sb);
+const audioDir = path.join(dir, 'audio'), clipDir = path.join(audioDir, 'vo');
+await fsp.mkdir(clipDir, { recursive: true });
+const findings = [];
+
+// ---------------------------------------------------------------- 1. synthesize
+const key = (s) => crypto.createHash('sha1').update([vo.provider, vo.voice, vo.speed, vo.lang, s.narration.trim()].join('␟')).digest('hex').slice(0, 10);
+const narrated = sb.scenes.filter((s) => s.narration && s.narration.trim());
+const clips = Object.fromEntries(narrated.map((s) => {
+  const h = key(s);
+  return [s.id, { wav: path.join(clipDir, `${s.id}-${h}.wav`), json: path.join(clipDir, `${s.id}-${h}.json`) }];
+}));
+const todo = args['mix-only'] ? [] : narrated.filter((s) => args.force || !fs.existsSync(clips[s.id].wav) || !fs.existsSync(clips[s.id].json));
+
+function runTTS(cmd, argv) {
+  return new Promise((resolve, reject) => {
+    const p = spawn(cmd, argv, { stdio: ['ignore', 'pipe', 'inherit'], shell: process.platform === 'win32' });
+    let out = ''; p.stdout.on('data', (d) => (out += d));
+    p.on('error', (e) => reject(new Error(`could not run ${cmd} (${e.message}). Install it: bash tts/install.sh (see references/install.md)`)));
+    p.on('close', (c) => (c === 0 ? resolve(out) : reject(new Error(`${cmd} exited ${c}`))));
+  });
+}
+
+if (todo.length) {
+  if (vo.provider !== 'kokoro') throw new Error(`audio.voiceover.provider "${vo.provider}" is not supported yet (use kokoro)`);
+  const job = { voice: vo.voice, speed: vo.speed, lang: vo.lang,
+    items: todo.map((s) => ({ id: s.id, text: s.narration.trim(), out: path.basename(clips[s.id].wav), timings: path.basename(clips[s.id].json) })) };
+  const jobFile = path.join(clipDir, 'job.json');
+  await writeJSON(jobFile, job);
+  console.log(`▶ synthesizing ${todo.length} clip(s) with kokoro-tts (voice ${vo.voice}, speed ${vo.speed})`);
+  await runTTS(process.env.VM_TTS || 'kokoro-tts', ['--batch', jobFile]);
+  await fsp.rm(jobFile, { force: true });
+} else console.log(`▶ narration: ${narrated.length} clip(s) cached`);
+
+// Drop clips from earlier wordings so the folder only holds what the storyboard says now.
+const keep = new Set(Object.values(clips).flatMap((c) => [path.basename(c.wav), path.basename(c.json)]));
+for (const f of await fsp.readdir(clipDir)) if (!keep.has(f)) await fsp.rm(path.join(clipDir, f), { force: true });
+
+const timing = { voice: vo.voice, speed: vo.speed, provider: vo.provider, scenes: {} };
+for (const s of narrated) {
+  const t = await readJSON(clips[s.id].json);
+  timing.scenes[s.id] = { file: path.relative(dir, clips[s.id].wav), duration: t.duration, words: t.words };
+}
+
+// ---------------------------------------------------------------- 2. retime
+if (vo.retime !== 'off' && !args['no-retime']) {
+  const rep = retime(sb, timing);
+  for (const r of rep) if (r.warn) findings.push({ level: 'warn', code: 'CUE', scene: r.id, msg: r.warn });
+  const moved = rep.filter((r) => r.to != null && Math.abs(r.to - r.from) > 0.01);
+  console.log(`▶ retimed ${moved.length} scene(s) to narration → total ${fmtTime(timelineTotal(sb))}`);
+  sb.target_duration = Math.round(timelineTotal(sb) * 10) / 10;
+}
+await writeJSON(sbPath, sb);
+syncProject(dir);
+
+// Narration must end before the next scene starts transitioning in.
+sb.scenes.forEach((s, i) => {
+  const c = timing.scenes[s.id];
+  if (c && s.duration + 1e-3 < requiredDuration(sb, i, c.duration, vo)) {
+    findings.push({ level: 'error', code: 'NARRATION_CUT', scene: s.id,
+      msg: `narration ${c.duration.toFixed(2)}s needs ${requiredDuration(sb, i, c.duration, vo).toFixed(2)}s but scene is ${s.duration}s (retime is ${vo.retime})` });
+  }
+});
+
+// ---------------------------------------------------------------- 3. assemble + captions
+const T = timelineTotal(sb), times = sceneTimes(sb);
+let rate = 24000, voiceFile = null;
+if (narrated.length) {
+  const loaded = narrated.map((s) => ({ s, w: readWav(clips[s.id].wav) }));
+  rate = loaded[0].w.rate;
+  const buf = new Float32Array(Math.ceil(T * rate) + 1);
+  for (const { s, w } of loaded) {
+    if (w.rate !== rate) throw new Error(`clip ${s.id} is ${w.rate} Hz, expected ${rate}`);
+    const i = sb.scenes.indexOf(s);
+    const at = Math.round((times[i].start + narrationLead(sb, i, vo)) * rate);
+    for (let k = 0; k < w.samples.length && at + k < buf.length; k++) buf[at + k] += w.samples[k];
+  }
+  voiceFile = path.join(audioDir, 'voiceover.wav');
+  writeWav(voiceFile, buf, rate);
+}
+await writeJSON(path.join(audioDir, 'timing.json'), timing);
+
+if (sb.audio.captions?.enabled && narrated.length) {
+  const groups = captionGroups(sb, timing);
+  await writeJSON(path.join(audioDir, 'captions.json'), { groups });
+  await fsp.writeFile(path.join(audioDir, 'captions.srt'), toSRT(groups));
+  await fsp.writeFile(path.join(audioDir, 'captions.vtt'), toVTT(groups));
+  console.log(`▶ captions: ${groups.length} cards → audio/captions.{json,srt,vtt}`);
+}
+
+// ---------------------------------------------------------------- 4. mix
+const { cues, problems } = sfxCues(sb, dir);
+for (const p of problems) findings.push({ level: 'error', code: 'SFX', msg: p });
+const m = await buildMix({ dir, sb, voiceFile, music: sb.audio.music, sfx: cues, out: path.join(audioDir, 'mix.wav') });
+syncProject(dir);
+console.log(`▶ mix: ${m.tracks} track(s), ${cues.length} sfx cue(s), ${fmtTime(m.duration)} → audio/mix.wav (${m.lufs.toFixed(1)} LUFS, TP ${m.true_peak.toFixed(1)} dBTP)`);
+if (Math.abs(m.lufs - vo.loudness) > 1.5) findings.push({ level: 'warn', code: 'LOUDNESS', msg: `integrated ${m.lufs.toFixed(1)} LUFS vs target ${vo.loudness}` });
+if (m.true_peak > vo.true_peak + 0.5) findings.push({ level: 'warn', code: 'TRUE_PEAK', msg: `true peak ${m.true_peak.toFixed(1)} dBTP above ${vo.true_peak}` });
+
+const words = narrated.reduce((n, s) => n + s.narration.trim().split(/\s+/).length, 0);
+findings.push({ level: 'info', code: 'VOICE', msg: `${narrated.length} clip(s), ${words} words over ${fmtTime(T)} (${(words / T).toFixed(2)} w/s overall)` });
+const c = printFindings('Voice-over', findings);
+if (c.error) process.exit(1);
