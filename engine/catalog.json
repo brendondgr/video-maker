@@ -25,8 +25,6 @@
   "transitions": ["cut", "fade", "slide-left", "slide-up", "wipe", "iris", "zoom", "blur"],
   "presets": {
     "1080p":    { "width": 1920, "height": 1080, "fps": 30 },
-    "720p":     { "width": 1280, "height": 720,  "fps": 30 },
-    "1440p":    { "width": 2560, "height": 1440, "fps": 30 },
     "4k":       { "width": 1920, "height": 1080, "fps": 30, "render_height": 2160, "_note": "author at 1080p, render with --height 2160" },
     "vertical": { "width": 1080, "height": 1920, "fps": 30 },
     "square":   { "width": 1080, "height": 1080, "fps": 30 },

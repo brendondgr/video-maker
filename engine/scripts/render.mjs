@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Render a video-maker project to MP4/WebM/PNG frames.
 //
-//   node render.mjs <project> [--quality draft|standard|high] [--fps 30] [--height 2160 | --scale 2]
+//   node render.mjs <project> [--quality draft|standard|high] [--fps 30] [--4k | --height 2160]
 //                             [--workers 4] [--from 0 --to 10 | --scene id] [--format mp4|webm|png]
 //                             [--codec h264|h265] [--audio voice.wav] [--out out/video.mp4] [--chrome path]
 //                             [--engine vm|hf]   (hf: HyperFrames renderer; also --format mov|gif, --docker, --gpu)
+//                             [--4k]             (2× the canvas, e.g. 3840×2160; default is the canvas size)
 //
 // Every frame i is produced by window.__vm.seek(i / fps) followed by a screenshot, so
 // output is deterministic and workers can render disjoint frame ranges in parallel.
@@ -30,8 +31,10 @@ async function main() {
   const q = QUALITY[args.quality || 'standard'];
   if (!q) throw new Error('--quality must be draft, standard or high');
   const fps = +(args.fps || canvas.fps);
-  let scale = args.scale ? +args.scale : args.height ? +args.height / canvas.height : 1;
-  if (args.quality === 'draft' && !args.scale && !args.height) scale = Math.min(1, 720 / Math.min(canvas.width, canvas.height));
+  // Output is the composition size (1080p for the default canvas) or exactly 2× (4K). Drafts
+  // lower encode quality, never resolution.
+  const scale = args['4k'] ? 2 : args.scale ? +args.scale : args.height ? +args.height / canvas.height : 1;
+  if (scale !== 1 && scale !== 2) throw new Error(`output must be native (${canvas.width}×${canvas.height}) or 4K (--4k / --height ${canvas.height * 2}); got scale ${scale}`);
   const format = args.format || 'mp4';
   const codec = args.codec || 'h264';
   if ((args.engine || 'vm') === 'hf') return renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format });
@@ -176,16 +179,14 @@ async function renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format
   if (ext == null) throw new Error('--format for --engine hf: mp4, webm, mov, gif or png');
   const out = path.resolve(args.out || path.join(dir, 'out', `${slug}-${outW}x${outH}-${fps}fps-hf${args.quality === 'draft' ? '-draft' : ''}${ext}`));
   await fsp.mkdir(path.dirname(out), { recursive: true });
-  // HyperFrames renders at the composition size or 4K; any other size is scaled afterwards.
-  const native = scale === 1;
-  const hf4k = scale === 2 && canvas.height === 1080 && canvas.width === 1920;
-  const post = !native && !hf4k;
-  const tmp = (args.audio || post) ? await fsp.mkdtemp(path.join(os.tmpdir(), 'vm-hf-')) : null;
+  // HyperFrames renders at the composition size or 4K (landscape-4k / portrait-4k / square-4k).
+  const hf4k = scale === 2;
+  const orient = canvas.width > canvas.height ? 'landscape' : canvas.width < canvas.height ? 'portrait' : 'square';
+  const tmp = args.audio ? await fsp.mkdtemp(path.join(os.tmpdir(), 'vm-hf-')) : null;
   const target = tmp && format !== 'png' ? path.join(tmp, 'video' + ext) : out;
-  if (post && format === 'png') throw new Error('--engine hf with --format png renders at native size only');
   const argv = ['render', '-o', target, '--quality', quality, '--fps', String(fps),
     '--format', format === 'png' ? 'png-sequence' : format];
-  if (hf4k) argv.push('--resolution', '4k');
+  if (hf4k) argv.push('--resolution', `${orient}-4k`);
   if (args.workers) argv.push('--workers', String(args.workers));
   if (args.docker) argv.push('--docker');
   if (args.gpu) argv.push('--gpu');
@@ -195,9 +196,9 @@ async function renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format
   const { code } = await runHF(dir, argv, { telemetry: !!args.telemetry });
   if (code !== 0) throw new Error(`hyperframes render exited with ${code}`);
   if (target !== out) {
-    const vf = post ? ['-vf', `scale=${outW}:${outH}:flags=lanczos`, '-c:v', format === 'webm' ? 'libvpx-vp9' : 'libx264', '-crf', '20', '-pix_fmt', 'yuv420p'] : ['-c:v', 'copy'];
-    const audio = args.audio ? ['-i', path.resolve(args.audio), '-map', '0:v', '-map', '1:a', '-c:a', format === 'webm' ? 'libopus' : 'aac', '-b:a', '192k', '-shortest'] : ['-map', '0'];
-    await run('ffmpeg', ['-y', '-v', 'error', '-i', target, ...audio, ...vf, ...(format === 'mp4' ? ['-movflags', '+faststart'] : []), out]);
+    await run('ffmpeg', ['-y', '-v', 'error', '-i', target, '-i', path.resolve(args.audio), '-map', '0:v', '-map', '1:a',
+      '-c:v', 'copy', '-c:a', format === 'webm' ? 'libopus' : 'aac', '-b:a', '192k', '-shortest',
+      ...(format === 'mp4' ? ['-movflags', '+faststart'] : []), out]);
     await fsp.rm(tmp, { recursive: true, force: true });
   }
   console.log(`✔ wrote ${out}`);

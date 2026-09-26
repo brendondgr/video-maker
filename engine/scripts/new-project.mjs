@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Scaffold a new video project from templates/project.
-//   node new-project.mjs <dir> [--title "..."] [--preset 1080p|720p|1440p|4k|vertical|square|portrait|cinema]
+//   node new-project.mjs <dir> [--title "..."] [--preset 1080p|4k|vertical|square|portrait|cinema]
 //                             [--width W --height H] [--fps 30] [--duration 60] [--mode open|directed] [--force]
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
