@@ -28,7 +28,7 @@ sb.canvas.height = +(args.height || preset.height);
 sb.canvas.fps = +(args.fps || preset.fps);
 if (args.title) { sb.meta.title = args.title; sb.meta.slug = args.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
 if (args.mode) sb.meta.mode = args.mode;
-if (args.duration) sb.target_duration = +args.duration;
+if (args.duration) { sb.target_duration = +args.duration; sb.meta.target_duration = +args.duration; }
 if (preset.render_height) sb.meta.render_height = preset.render_height;
 if (args.voice) Object.assign(sb.audio.voiceover, { enabled: true, voice: args.voice === true ? 'af_heart' : args.voice });
 if (args.captions) sb.audio.captions.enabled = true;
@@ -40,4 +40,4 @@ if (args.design) {
 }
 for (const d of ['assets', 'out', 'qa']) await fsp.mkdir(path.join(dir, d), { recursive: true });
 console.log(`✔ created ${dir}  (${sb.canvas.width}×${sb.canvas.height} @ ${sb.canvas.fps}fps${preset.render_height ? `, render with --height ${preset.render_height}` : ''})`);
-console.log('  next: brief.md → storyboard.json (+ narration) → scenes/*.js → voiceover → qa → render --deliver');
+console.log('  next: brief.md → storyboard.json (+ narration, images) → plan.mjs → images.mjs (background) → voiceover → scenes/*.js → qa → render --deliver');

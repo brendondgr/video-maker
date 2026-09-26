@@ -132,9 +132,24 @@ in `assets/fonts/`), motion (`ease`, `base` duration, `exit` duration). See `mot
 for choices that read as professional. Project-specific classes go in `style.css`, sized with
 `var(--u)`.
 
+Set `style.roles` for the video's recurring actors (one colour and icon each), and write the
+illustration **style key** in `storyboard.images.style` using the same palette
+(`visual-playbook.md` § 4, `images.md` § 2).
+
+## 5b · Illustrations
+
+Add each generated illustration the storyboard needs to `storyboard.images.items`, then run
+`images.mjs` in the background as soon as the storyboard is written. Look at
+`qa/images-contact-sheet.png` before building the scenes that use the images (`images.md`).
+
 ## 6 · Build
 
-- Copy the closest scene from `examples/gradient-descent/scenes/` as a starting point.
+- Follow `visual-playbook.md`: pick the medium per scene, build diagrams step by step on beat
+  cues, respect the size minimums, no dead frames.
+- Build with the scene kit (`VMX.kit`: frame parts, diagrams, charts, UI mock-ups) and the
+  `VMX.*` helpers. Copy the closest scene from `examples/gradient-descent/scenes/` or from a
+  previous project as a starting point.
+- Videos over about 5 minutes: build chapters in parallel with sub-agents (`long-form.md`).
 - Shared computation (datasets, functions, precomputed paths) → `lib/*.js` loaded via
   `storyboard.assets.scripts`, so several scenes can use the same numbers.
 - Build scene by scene with preview open (`preview.mjs` → `?preview&scene=<id>`), then run
@@ -144,6 +159,7 @@ for choices that read as professional. Project-specific classes go in `style.css
 
 ## 7 · Voice → 8 · QA → 9 · Render → 10 · Deliver
 
-Covered in `voiceover.md`, `validation.md` and `rendering.md`. The deliverable note should include: file(s) and
+Covered in `voiceover.md`, `validation.md` (+ `visual-playbook.md` § 8) and `rendering.md`. After the voice
+pass, re-run `plan.mjs` so `PLAN.md` / `SCRIPT.md` carry the final timecodes, and ship them with the video. The deliverable note should include: file(s) and
 where they are, duration/resolution/fps, the scene list, assumptions, illustrative content, and
 accepted warnings.

@@ -182,6 +182,7 @@
 
   async function start(opts) {
     var sb = await loadStoryboard(opts.storyboard);
+    VM.storyboard = sb;   // read-only for helpers that need project tokens (e.g. kit roles)
     var canvas = Object.assign({ width: 1920, height: 1080, fps: 30, safe_area: 0.05 }, sb.canvas || {});
     var W = canvas.width, H = canvas.height, FPS = canvas.fps;
     var warnings = [], errors = [];

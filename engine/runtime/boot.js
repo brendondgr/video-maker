@@ -29,6 +29,8 @@
     'runtime/helpers/science.js',
     'runtime/helpers/three.js',
     'runtime/helpers/figures.js',
+    'runtime/helpers/kit.js',
+    'runtime/helpers/kit-diagrams.js',
     'runtime/helpers/captions.js'
   ].map(function (p) { return E + p; });
 

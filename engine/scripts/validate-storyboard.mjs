@@ -97,7 +97,10 @@ export async function validateStoryboard(dir, { planOnly = false } = {}) {
       if (!fs.existsSync(f)) add('error', 'SCENE_FILE', `missing ${path.relative(dir, f)}`, at);
     }
     for (const a of s.assets || []) {
-      if (!/^https?:/.test(a) && !fs.existsSync(path.join(dir, a))) add('error', 'ASSET', `missing asset ${a}`, at);
+      if (!/^https?:/.test(a) && !fs.existsSync(path.join(dir, a))) {
+        const planned = (sb.images?.items || []).some((it) => a === `assets/img/${it.name}.jpg`);
+        add('error', 'ASSET', `missing asset ${a}${planned ? ' (a planned illustration: run images.mjs)' : ''}`, at);
+      }
     }
   });
 

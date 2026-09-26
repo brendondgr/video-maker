@@ -1,0 +1,76 @@
+{
+ "duration": 6.3,
+ "sample_rate": 24000,
+ "words": [
+  {
+   "w": "And",
+   "start": 0.35,
+   "end": 0.487
+  },
+  {
+   "w": "with",
+   "start": 0.487,
+   "end": 0.662
+  },
+  {
+   "w": "caching,",
+   "start": 0.662,
+   "end": 1.425
+  },
+  {
+   "w": "each",
+   "start": 1.538,
+   "end": 1.85
+  },
+  {
+   "w": "repeat",
+   "start": 1.85,
+   "end": 2.25
+  },
+  {
+   "w": "visit",
+   "start": 2.25,
+   "end": 2.575
+  },
+  {
+   "w": "gets",
+   "start": 2.575,
+   "end": 2.837
+  },
+  {
+   "w": "faster,",
+   "start": 2.837,
+   "end": 3.6
+  },
+  {
+   "w": "dropping",
+   "start": 3.737,
+   "end": 4.225
+  },
+  {
+   "w": "below",
+   "start": 4.225,
+   "end": 4.575
+  },
+  {
+   "w": "the",
+   "start": 4.575,
+   "end": 4.713
+  },
+  {
+   "w": "one",
+   "start": 4.713,
+   "end": 5.013
+  },
+  {
+   "w": "second",
+   "start": 5.013,
+   "end": 5.375
+  },
+  {
+   "w": "mark.",
+   "start": 5.375,
+   "end": 6.025
+  }
+ ]
+}

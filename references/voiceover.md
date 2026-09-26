@@ -80,8 +80,10 @@ notice being late: a number appearing as it is said, a node lighting up as it is
 
 These rules come from HyperFrames' `hyperframes-creative/references/narration.md` and
 `story-spine.md`, adapted.
-- **Pace.** Kokoro speaks about 2.3–2.6 words/s at speed 1.0. Budget about 70 words for 30 s, 140
-  for 60 s and 650–700 for 5 min, less if scenes need silent build time.
+- **Pace.** Kokoro speaks about 2.3–2.6 words/s at speed 1.0; measured, `am_michael` is about 2.4 and
+  `af_heart` about 2.65. Speed 1.05–1.1 still sounds natural. Budget about 70 words for 30 s,
+  120–130 for 60 s, about 370 for 3 min and 1,250–1,350 for 10 min (pads cost about 1.2 s per
+  scene), less if scenes need silent build time. Synthesize early and trim to the measured length.
 - **Write for the ear.** One idea per sentence, 8–18 words. Put the subject and verb early. Avoid
   parentheses and stacked clauses.
 - **Numbers the way they're said.** "two thousand three hundred drugs", "I-C-fifty",
@@ -94,6 +96,25 @@ These rules come from HyperFrames' `hyperframes-creative/references/narration.md
 - **Check pronunciation** of names and jargon with a quick `kokoro-tts "…" -o /tmp/t.wav`. If a
   word is mangled, respell it phonetically in the narration only; captions show the narration
   text, so prefer respellings that still read correctly.
+
+### Speaker style (default for technical and in-depth videos)
+
+Write the narration the way a good lecturer talks, not the way a paper reads:
+- **Open with a story or a surprise**, not a definition. A concrete case, a number that doesn't
+  seem possible, a question the viewer can't answer yet. Name the topic after it.
+- **Make hard ideas concrete with an image or a metaphor**, then map it back to the real thing:
+  "Think of a busy kitchen: the Supervisor pins tickets to a rail, and whichever cook is free grabs
+  the next one. The cooks are worker agents." Use one metaphor per concept, carry it through, and
+  call back to it later. Every metaphor gets a picture (`visual-playbook.md` § 6).
+- **Talk to the viewer:** "picture…", "here's the elegant part", "so, does it work?". Use
+  questions as chapter bridges.
+- **Signpost:** say where you are going ("three things make this work") and when a section ends.
+- **Explain a rule, then show one worked example** with real numbers.
+- **Numbers:** round them the way people say them, and give each one a comparison ("a decade of
+  work, matched in two days").
+- **Honesty in the voice:** say how a result was measured when it matters ("rated in its own
+  tournament", "in one cell line"), and end with the limitations.
+- For short videos (≤ 60 s) keep only the hook, one metaphor at most, and the takeaway.
 
 ## Captions
 

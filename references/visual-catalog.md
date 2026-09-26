@@ -3,6 +3,9 @@
 Pick the visual that shows the idea most **directly**; text is the fallback. The types below match
 `engine/catalog.json` (the validator checks `visual.type` against it).
 
+Start with `visual-playbook.md` § 1 (diagram vs chart vs UI mock-up vs generated illustration).
+The scene kit (`VMX.kit`) covers the common explainer parts listed at the end of this file.
+
 ## Content → visual
 
 | The idea is… | Type | Build with | Notes |
@@ -92,3 +95,19 @@ Deliberately **not** used, with reasons carried over from viz-bench and adjusted
 - More than ~20 data points of scattered data → canvas, not SVG.
 - A diagram with > 7 boxes → split across two scenes or zoom (scale a wrapper) between halves.
 - If a visual needs a paragraph to explain, the visual is wrong.
+
+## Scene kit equivalents (`VMX.kit`)
+
+| Idea | Kit part |
+|---|---|
+| a process or pipeline, built step by step | `K.flow` (with `ghost: true` for a long intro line) |
+| parallel work, throughput, "more workers" | `K.lanes` |
+| grouping, similarity, de-duplication | `K.clusters` |
+| a ranking that changes | `K.rankList` + `.move` |
+| a trend with a live value, baselines to beat, "no plateau" | `K.trend` (`refs`, `readout`, `at.extend`) |
+| scores where lower is better | `K.dotPlot` |
+| a selection or filtering process | `K.funnel` |
+| examples or case studies with pictures | `K.imageCards` |
+| how to use a tool | `K.app` + `K.field` + `K.button`/`K.press` + `K.tracker` |
+| chapter openers | `K.chapterScene` over an illustration |
+

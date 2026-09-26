@@ -9,52 +9,144 @@
     "tone": "clear, calm, confident",
     "sources": []
   },
-  "canvas": { "width": 1920, "height": 1080, "fps": 30, "background": "#0b0f17", "safe_area": 0.05 },
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "#0b0f17",
+    "safe_area": 0.05
+  },
   "target_duration": 12,
   "style": {
     "palette": {
-      "bg": "#0b0f17", "surface": "#131a26", "ink": "#eef2f8", "muted": "#93a0b4", "line": "#2a3446",
-      "accent": "#5eb0ff", "accent-2": "#ffb454", "accent-3": "#7ee0a1", "warn": "#ff6b6b"
+      "bg": "#0b0f17",
+      "surface": "#131a26",
+      "ink": "#eef2f8",
+      "muted": "#93a0b4",
+      "line": "#2a3446",
+      "accent": "#5eb0ff",
+      "accent-2": "#ffb454",
+      "accent-3": "#7ee0a1",
+      "warn": "#ff6b6b"
     },
-    "fonts": { "sans": "'Inter Variable'", "mono": "'JetBrains Mono Variable'", "serif": "'Source Serif 4 Variable'" },
-    "motion": { "ease": "power3.out", "base": 0.7, "exit": 0.45 }
+    "fonts": {
+      "sans": "'Inter Variable'",
+      "mono": "'JetBrains Mono Variable'",
+      "serif": "'Source Serif 4 Variable'"
+    },
+    "motion": {
+      "ease": "power3.out",
+      "base": 0.7,
+      "exit": 0.45
+    },
+    "roles": {}
+  },
+  "images": {
+    "backend": "codex",
+    "size": "landscape",
+    "style": "",
+    "items": []
   },
   "audio": {
-    "voiceover": { "enabled": false, "voice": "af_heart", "speed": 1.0, "retime": "fit" },
-    "captions": { "enabled": false, "style": "clean" },
+    "voiceover": {
+      "enabled": false,
+      "voice": "af_heart",
+      "speed": 1.0,
+      "retime": "fit"
+    },
+    "captions": {
+      "enabled": false,
+      "style": "clean"
+    },
     "music": null
   },
-  "rules": { "max_words_per_second": 3.2, "min_scene_duration": 1.5, "max_scene_duration": 20 },
-  "assets": { "scripts": [] },
+  "rules": {
+    "max_words_per_second": 3.2,
+    "min_scene_duration": 1.5,
+    "max_scene_duration": 20
+  },
+  "assets": {
+    "scripts": []
+  },
   "scenes": [
     {
       "id": "intro",
       "duration": 4,
       "purpose": "Hook: name the topic in one line.",
-      "on_screen_text": ["A video about something", "made with video-maker"],
+      "on_screen_text": [
+        "A video about something",
+        "made with video-maker"
+      ],
       "narration": "",
-      "visual": { "type": "kinetic-title", "notes": "Title rises word by word, subtitle fades in under it." },
-      "beats": [ { "id": "title", "t": 0.3 }, { "id": "sub", "t": 1.4 } ]
+      "visual": {
+        "type": "kinetic-title",
+        "notes": "Title rises word by word, subtitle fades in under it."
+      },
+      "beats": [
+        {
+          "id": "title",
+          "t": 0.3
+        },
+        {
+          "id": "sub",
+          "t": 1.4
+        }
+      ]
     },
     {
       "id": "point",
       "duration": 4.5,
       "purpose": "State the single key idea.",
-      "on_screen_text": ["One idea per scene.", "Everything else supports it."],
+      "on_screen_text": [
+        "One idea per scene.",
+        "Everything else supports it."
+      ],
       "narration": "",
-      "visual": { "type": "statement", "notes": "Statement with the key phrase highlighted." },
-      "beats": [ { "id": "line", "t": 0.2 }, { "id": "mark", "t": 1.6 }, { "id": "support", "t": 2.2 } ],
-      "transition_in": { "type": "fade", "duration": 0.5 }
+      "visual": {
+        "type": "statement",
+        "notes": "Statement with the key phrase highlighted."
+      },
+      "beats": [
+        {
+          "id": "line",
+          "t": 0.2
+        },
+        {
+          "id": "mark",
+          "t": 1.6
+        },
+        {
+          "id": "support",
+          "t": 2.2
+        }
+      ],
+      "transition_in": {
+        "type": "fade",
+        "duration": 0.5
+      }
     },
     {
       "id": "outro",
       "duration": 4,
       "purpose": "Close: the takeaway.",
-      "on_screen_text": ["Plan it. Build it. Check it."],
+      "on_screen_text": [
+        "Plan it. Build it. Check it."
+      ],
       "narration": "",
-      "visual": { "type": "outro", "notes": "Three words pop in sequence." },
-      "beats": [ { "id": "words", "t": 0.3 } ],
-      "transition_in": { "type": "wipe", "duration": 0.6 }
+      "visual": {
+        "type": "outro",
+        "notes": "Three words pop in sequence."
+      },
+      "beats": [
+        {
+          "id": "words",
+          "t": 0.3
+        }
+      ],
+      "transition_in": {
+        "type": "wipe",
+        "duration": 0.6
+      }
     }
   ]
 }

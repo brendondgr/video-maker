@@ -1,0 +1,51 @@
+1
+00:00:00,675 --> 00:00:02,742
+Every time you click a link,
+
+2
+00:00:02,762 --> 00:00:04,775
+a tiny message races across
+
+3
+00:00:04,775 --> 00:00:05,837
+the world and back in
+
+4
+00:00:05,837 --> 00:00:07,650
+a fraction of a second.
+
+5
+00:00:09,433 --> 00:00:10,858
+Let's follow it.
+
+6
+00:00:12,508 --> 00:00:14,483
+Your browser asks DNS
+
+7
+00:00:14,483 --> 00:00:15,651
+for the address,
+
+8
+00:00:15,671 --> 00:00:17,775
+sends the request to a server,
+
+9
+00:00:17,795 --> 00:00:19,096
+and the server fetches your
+
+10
+00:00:19,096 --> 00:00:21,058
+data from a database.
+
+11
+00:00:22,683 --> 00:00:23,851
+And with caching,
+
+12
+00:00:23,871 --> 00:00:26,050
+each repeat visit gets faster,
+
+13
+00:00:26,070 --> 00:00:28,658
+dropping below the one second mark.

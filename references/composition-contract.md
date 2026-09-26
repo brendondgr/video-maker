@@ -115,6 +115,37 @@ Figures (`helpers/figures.js`, adapted from HyperFrames motion rules)
 - `pulse(ctx, el, { at, scale, color })` — one emphasis beat (pair with a narration `cue`)
 - `.vm-node` (diagram chip) is centred on its point with GSAP `xPercent/yPercent` — don't add CSS transforms to it
 
+### Scene kit: `VMX.kit` (`helpers/kit.js`, `helpers/kit-diagrams.js`)
+
+The building blocks of an explainer frame, sized to the minimums in `visual-playbook.md` and
+animated at the times you pass in. Use `const K = VMX.kit;` in scene files. Items that take a
+**role** accept a key from `storyboard.style.roles` (`{ "gen": { "name", "color", "icon" } }`) or
+an inline `{ label, color, icon }`.
+
+| Frame parts | Signature |
+|---|---|
+| Image background with a slow push-in and a scrim | `await K.bg(ctx, src, { scrim:'left'\|'right'\|'full'\|'soft'\|'none', dim, from, to, overlay, at })` → `{ wrap, img, over }` |
+| Rounded image panel | `await K.panel(ctx, src, { x, y, w, h, at, zoom })` |
+| Role header (badge + name) / section title | `K.header(ctx, role, { at, sub })` · `K.title(ctx, text, { at, kicker, sub })` |
+| Chapter card / whole chapter scene | `K.chapter(ctx, { num, title, at, icon, color, sub })` · `await K.chapterScene(ctx, { bg, icon, color })` (reads `ctx.text[0..1]`) |
+| Chips, pills, cards, stamps, footnotes | `K.chip(ctx, parent, role, { x, y, at, big })` · `K.pill(ctx, parent, text, { color, fill, x, y, at })` · `K.card(ctx, parent, { title, value, lines, text, color, x, y, w, at })` · `K.stamp(ctx, parent, text, { x, y, at, color })` · `K.note(ctx, text, { at, align })` |
+| Icons | `K.icon(name, { size, color })` · `K.badge(ctx, parent, name, { color, size })`; the names are in `K.ICONS` |
+| Illustrative UI | `K.app(ctx, { x, y, w, h, title, at })` → `{ body }` · `K.field(ctx, parent, label)` → `{ text }` (fill with `VMX.typeOn`) · `K.button` · `K.press(ctx, btn, at, color)` · `K.tracker(ctx, step, labels, { scale })` |
+| Utilities | `K.pos(el, x, y)` (centre on a point) · `K.pop(ctx, el, at)` · `K.glow(ctx, el, at, color)` · `K.role(key)` · `K.fmt(n)` |
+
+| Diagrams and charts (each step takes its own `at`) | Signature |
+|---|---|
+| Process / pipeline | `K.flow(ctx, { steps:[{ label, sub, icon, role, at }], y, h, ghost })` |
+| Parallel work (workers, teams) | `K.lanes(ctx, { rect, lanes, roles, from, to, tasks? })` |
+| Grouping / similarity | `K.clusters(ctx, { rect, groups:[{ color, n, cx, cy }] })` → `.appear(at)`, `.settle(at)`, `.link(at)` |
+| Ranked list that re-sorts | `K.rankList(ctx, { rows:[{ label, value, hi }], x, y, w, title, at })` → `.move(from, to, at, newValue)` |
+| Trend with readout, reference lines, "keeps going" | `K.trend(ctx, { series, rect, x, y, at:{ axes, series:[…], extend }, refs, refsAt, readout, extendLabel })` |
+| Scores where lower is better | `K.dotPlot(ctx, { rows, domain, better:'lower', rect, title, at })` |
+| Selection stages | `K.funnel(ctx, { stages:[{ value, label, at }], rect })` |
+| Row of image cards | `await K.imageCards(ctx, { items:[{ src, head, fact, color, at }], y, h })` |
+
+Styles are in `vm.css` under the `k-` prefix. Override them in the project's `style.css`.
+
 3D (`helpers/three.js`) — build must be `async`
 - `await scene3d(ctx, { camera:[x,y,z], lookAt, fov, background })` → `{ THREE, scene, camera, orbit, onFrame }`; tween `orbit.angle/elevation/distance`
 - `surface(THREE, (x, z, p) => y, { size, segments, range, colormap })` → `{ mesh, update(p) }`

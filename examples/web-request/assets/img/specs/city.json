@@ -1,0 +1,9 @@
+{
+  "job_id": "how-a-web-request-travels-city-c2fca6c9",
+  "backend": "codex",
+  "prompt": "A night city seen from a high balcony, thin streams of blue and amber light racing between buildings like data, one glowing laptop on the balcony railing in the right half of the frame, the left third calm dark sky. Style: cinematic editorial illustration with painterly digital shading and subtle film grain. Palette: deep midnight-navy background (#0b0f17), luminous blue (#5eb0ff) and warm amber (#ffb454) light accents. Keep the main subject away from the top and bottom edges (the frame will be cropped to 16:9). Absolutely no text, letters, numbers, logos or watermarks.",
+  "size": "landscape",
+  "filename": "city",
+  "count": 1,
+  "seed": null
+}

@@ -1,15 +1,19 @@
 # video-maker
 
-A Claude skill that makes narrated motion-graphics videos as code. It works in four steps:
+A Claude skill that makes narrated motion-graphics videos as code. It works in five steps:
 
 1. **Plan.** A storyboard (JSON) holds the scenes, the narration and the beats. Each scene gets
    one small JavaScript builder, animated on a single seekable GSAP timeline.
-2. **Voice.** Local GPU text-to-speech (Kokoro-82M) produces the narration with word timings.
+2. **Illustrate.** Illustrations are declared in the storyboard (one shared style key plus one
+   prompt each) and generated through the bundled `imagegen` dispatcher (Codex or a local
+   ComfyUI). Diagrams and charts are never generated: they are built in SVG, step by step, with
+   each step landing on the word that names it (`references/visual-playbook.md`).
+3. **Voice.** Local GPU text-to-speech (Kokoro-82M) produces the narration with word timings.
    Scenes and beats are retimed to the voice, and captions, sound effects and a mastered mix are
    generated from it.
-3. **Check.** QA gates (ours plus HyperFrames' `check`) run automatically, followed by a visual
+4. **Check.** QA gates (ours plus HyperFrames' `check`) run automatically, followed by a visual
    review of contact sheets.
-4. **Render.** Output is deterministic 1080p or 4K MP4, from either the built-in
+5. **Render.** Output is deterministic 1080p or 4K MP4, from either the built-in
    Playwright + FFmpeg renderer or **[HyperFrames](https://github.com/heygen-com/hyperframes)**.
    Every project is also a valid HyperFrames composition, so HyperFrames Studio, lint and the
    renderer work on it directly.
@@ -19,16 +23,19 @@ Start with `SKILL.md`.
 ```
 SKILL.md                 the workflow the agent follows
 PLAN.md                  how video-maker and HyperFrames were combined (phased, with status)
-references/              workflow, schema, API, visual catalog, motion design, voice-over, validation,
-                         rendering, hyperframes bridge, install (Linux/macOS/Windows × GPU types)
+references/              workflow, visual playbook, images, long-form, schema, API, visual catalog, motion design,
+                         voice-over, validation, rendering, hyperframes bridge, install (Linux/macOS/Windows × GPU types)
 engine/                  runtime (browser) + scripts (Node) + catalog.json   ← run `npm install` here
   runtime/               vm.js (timeline core), transitions.js, boot.js, preview.js, vm.css, helpers/*.js
-  scripts/               new-project, design, validate-storyboard, lint, check, snapshot, qa, voiceover,
+                         (helpers/kit*.js = the scene kit: frame parts, step-by-step diagrams, charts, UI mock-ups)
+  scripts/               new-project, design, validate-storyboard, plan, images, lint, check, snapshot, qa, voiceover,
                          preview, render, verify-output, hf (HyperFrames bridge), sync-hyperframes, doctor
+imagegen/                bundled image dispatcher (codex / comfy backends, manifest contract), used by images.mjs
 tts/                     kokoro-tts: CLI + installers (install.sh for Linux/macOS, install.ps1 for Windows)
 vendor/hyperframes/      ten HyperFrames skills, vendored unmodified (Apache-2.0, pinned v0.8.77)
-templates/project/       what new-project.mjs copies
+templates/project/       what new-project.mjs copies · templates/scene-brief.md: brief for parallel scene builds
 examples/gradient-descent/  a complete 50 s example that passes every gate
+examples/web-request/    a 30 s narrated example using the scene kit, roles and generated illustrations
 ```
 
 Setup (details in `references/install.md`):

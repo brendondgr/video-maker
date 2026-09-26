@@ -1,0 +1,40 @@
+{
+  "city": {
+    "hash": "c2fca6c9",
+    "job_id": "how-a-web-request-travels-city-c2fca6c9",
+    "backend": "codex",
+    "model": null,
+    "size": "landscape",
+    "seed": null,
+    "source": "/home/bdgr/imagegen/jobs/how-a-web-request-travels-city-c2fca6c9/out/city.png",
+    "source_size": [
+      1536,
+      1024
+    ],
+    "output": "assets/img/city.jpg",
+    "output_size": [
+      1920,
+      1280
+    ],
+    "status": "ok"
+  },
+  "racks": {
+    "hash": "35fb9fb6",
+    "job_id": "how-a-web-request-travels-racks-35fb9fb6",
+    "backend": "codex",
+    "model": null,
+    "size": "landscape",
+    "seed": null,
+    "source": "/home/bdgr/imagegen/jobs/how-a-web-request-travels-racks-35fb9fb6/out/racks.png",
+    "source_size": [
+      1536,
+      1024
+    ],
+    "output": "assets/img/racks.jpg",
+    "output_size": [
+      1920,
+      1280
+    ],
+    "status": "ok"
+  }
+}

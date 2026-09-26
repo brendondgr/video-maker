@@ -23,13 +23,21 @@ the plan and the build cannot drift apart. Scene code reads its text and beat ti
     "background": "#0b0f17",
     "safe_area": 0.05                      // fraction of each edge reserved (title-safe)
   },
-  "target_duration": 50,                   // seconds; validator warns if the timeline misses by >10 % (min 2 s)
+  "target_duration": 50,                   // seconds; validator warns if the timeline misses by >10 % (min 2 s).
+                                           // voiceover.mjs overwrites it with the fitted length; the requested
+                                           // length is kept in meta.target_duration (plan.mjs reports it)
   "style": {
     "palette": { "bg": "…", "surface": "…", "ink": "…", "muted": "…", "line": "…",
                  "accent": "…", "accent-2": "…", "accent-3": "…", "warn": "…" },   // → CSS --c-<key>
     "fonts":   { "sans": "'Inter Variable'", "display": "'Space Grotesk'", "mono": "'JetBrains Mono Variable'", "serif": "'Source Serif 4 Variable'" }, // → --f-<key>; display = headings (defaults to sans)
     "design":  { "source": "…/frame-presets/blue-professional/FRAME.md" }   // written by design.mjs
-    "motion":  { "ease": "power3.out", "base": 0.7, "exit": 0.45, "presets": { /* optional overrides */ } }
+    "motion":  { "ease": "power3.out", "base": 0.7, "exit": 0.45, "presets": { /* optional overrides */ } },
+    "roles":   { "gen": { "name": "Generation", "color": "#5eb0ff", "icon": "bulb" } }   // recurring actors: one colour + icon each (VMX.kit, visual-playbook.md § 4)
+  },
+  "images": {                              // generated illustrations → images.mjs (see images.md)
+    "backend": "codex", "size": "landscape",
+    "style": "<one style key appended to every prompt: palette, medium, lighting, 'no text'>",
+    "items": [ { "name": "hero", "prompt": "…" }, { "name": "cells", "prompt": "…", "backend": "comfy", "model": "z-image-turbo", "seed": 7 } ]
   },
   "audio": {                               // see voiceover.md
     "voiceover": { "enabled": true, "voice": "am_michael", "speed": 1.0, "retime": "fit",
@@ -89,6 +97,9 @@ the plan and the build cannot drift apart. Scene code reads its text and beat ti
 | `meta.title/slug/mode/goal` | recommended | validator, output names, hand-off |
 | `canvas.*` | yes | runtime, renderer, checks |
 | `style.*` | recommended | runtime → CSS variables |
+| `style.roles` | when a video has recurring actors | `VMX.kit` (headers, chips, flows, lanes) |
+| `images.*` | when the video uses illustrations | images.mjs, plan.mjs |
+| `meta.target_duration` | recommended | plan.mjs (the requested length; `target_duration` becomes the fitted one) |
 | `scenes[].id/duration/visual.type` | yes | everything |
 | `scenes[].purpose` | recommended (warned) | editorial discipline |
 | `scenes[].on_screen_text` | when the scene shows text | reading-speed check, `ctx.text` |

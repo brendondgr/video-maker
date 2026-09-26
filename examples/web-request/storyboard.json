@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "meta": {
+    "title": "How a Web Request Travels",
+    "slug": "how-a-web-request-travels",
+    "mode": "open",
+    "audience": "curious beginners",
+    "goal": "Viewer can name the four hops of a web request.",
+    "tone": "friendly, clear",
+    "sources": [],
+    "target_duration": 30
+  },
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "fps": 30,
+    "background": "#0b0f17",
+    "safe_area": 0.05
+  },
+  "target_duration": 29.1,
+  "style": {
+    "palette": {
+      "bg": "#0b0f17",
+      "surface": "#131a26",
+      "ink": "#eef2f8",
+      "muted": "#93a0b4",
+      "line": "#2a3446",
+      "accent": "#5eb0ff",
+      "accent-2": "#ffb454",
+      "accent-3": "#7ee0a1",
+      "warn": "#ff6b6b"
+    },
+    "fonts": {
+      "sans": "'Inter Variable'",
+      "mono": "'JetBrains Mono Variable'",
+      "serif": "'Source Serif 4 Variable'"
+    },
+    "motion": {
+      "ease": "power3.out",
+      "base": 0.7,
+      "exit": 0.45
+    },
+    "roles": {
+      "browser": {
+        "name": "Browser",
+        "color": "#5eb0ff",
+        "icon": "globe"
+      },
+      "dns": {
+        "name": "DNS",
+        "color": "#b18cff",
+        "icon": "compass"
+      },
+      "server": {
+        "name": "Server",
+        "color": "#ffb454",
+        "icon": "server"
+      },
+      "db": {
+        "name": "Database",
+        "color": "#7ee0a1",
+        "icon": "database"
+      }
+    }
+  },
+  "images": {
+    "backend": "codex",
+    "size": "landscape",
+    "style": "Style: cinematic editorial illustration with painterly digital shading and subtle film grain. Palette: deep midnight-navy background (#0b0f17), luminous blue (#5eb0ff) and warm amber (#ffb454) light accents. Keep the main subject away from the top and bottom edges (the frame will be cropped to 16:9). Absolutely no text, letters, numbers, logos or watermarks.",
+    "items": [
+      {
+        "name": "city",
+        "prompt": "A night city seen from a high balcony, thin streams of blue and amber light racing between buildings like data, one glowing laptop on the balcony railing in the right half of the frame, the left third calm dark sky."
+      },
+      {
+        "name": "racks",
+        "prompt": "A long aisle of server racks in a dark data centre, rows of tiny blue and amber status lights receding to a vanishing point, soft haze, low camera angle."
+      }
+    ]
+  },
+  "audio": {
+    "voiceover": {
+      "enabled": true,
+      "voice": "am_michael",
+      "speed": 1,
+      "retime": "fit"
+    },
+    "captions": {
+      "enabled": true,
+      "style": "clean"
+    },
+    "music": null
+  },
+  "rules": {
+    "max_words_per_second": 3.2,
+    "min_scene_duration": 1.5,
+    "max_scene_duration": 20
+  },
+  "assets": {
+    "scripts": []
+  },
+  "scenes": [
+    {
+      "id": "hook",
+      "duration": 8.733,
+      "purpose": "Hook: every click starts a journey.",
+      "on_screen_text": [
+        "Web basics",
+        "How a request travels"
+      ],
+      "narration": "Every time you click a link, a tiny message races across the world and back in a fraction of a second.",
+      "visual": {
+        "type": "image",
+        "notes": "city.jpg push-in, title on the dark left third."
+      },
+      "beats": [
+        {
+          "id": "title",
+          "t": 1.562,
+          "cue": "text:click"
+        }
+      ],
+      "assets": [
+        "assets/img/city.jpg"
+      ],
+      "silent": {
+        "duration": 6,
+        "beats": {
+          "title": 0.4
+        }
+      }
+    },
+    {
+      "id": "ch1",
+      "duration": 3.7,
+      "purpose": "Chapter card.",
+      "on_screen_text": [
+        "01",
+        "The four hops"
+      ],
+      "narration": "Let's follow it.",
+      "visual": {
+        "type": "kinetic-title",
+        "notes": "Chapter card over racks.jpg."
+      },
+      "beats": [
+        {
+          "id": "num",
+          "t": 0.211
+        }
+      ],
+      "assets": [
+        "assets/img/racks.jpg"
+      ],
+      "transition_in": {
+        "type": "color-dip",
+        "duration": 0.6,
+        "color": "#0b0f17"
+      },
+      "silent": {
+        "duration": 3.5,
+        "beats": {
+          "num": 0.2
+        }
+      }
+    },
+    {
+      "id": "hops",
+      "duration": 10.7,
+      "purpose": "The four hops, built on the words.",
+      "on_screen_text": [
+        "Browser",
+        "DNS",
+        "Server",
+        "Database"
+      ],
+      "narration": "Your browser asks DNS for the address, sends the request to a server, and the server fetches your data from a database.",
+      "visual": {
+        "type": "diagram",
+        "notes": "K.flow ghosted; each hop lights on its word."
+      },
+      "beats": [
+        {
+          "id": "b",
+          "t": 1.362,
+          "cue": "text:browser"
+        },
+        {
+          "id": "d",
+          "t": 2.45,
+          "cue": "text:DNS"
+        },
+        {
+          "id": "s",
+          "t": 5.55,
+          "cue": "text:server"
+        },
+        {
+          "id": "db",
+          "t": 8.362,
+          "cue": "text:database"
+        }
+      ],
+      "transition_in": {
+        "type": "blur-crossfade",
+        "duration": 0.5
+      },
+      "silent": {
+        "duration": 9,
+        "beats": {
+          "b": 0.3,
+          "d": 1.5,
+          "s": 3,
+          "db": 5
+        }
+      }
+    },
+    {
+      "id": "latency",
+      "duration": 7.6,
+      "purpose": "Illustrative latency trend with baselines.",
+      "on_screen_text": [
+        "Page load over a session",
+        "load time (ms)",
+        "illustrative numbers"
+      ],
+      "narration": "And with caching, each repeat visit gets faster, dropping below the one second mark.",
+      "visual": {
+        "type": "line-chart",
+        "notes": "K.trend with a reference line and live readout; illustrative."
+      },
+      "beats": [
+        {
+          "id": "axes",
+          "t": 0.285
+        },
+        {
+          "id": "draw",
+          "t": 1.462,
+          "cue": "text:caching"
+        },
+        {
+          "id": "ref",
+          "t": 5.513,
+          "cue": "text:one second"
+        }
+      ],
+      "transition_in": {
+        "type": "blur-crossfade",
+        "duration": 0.5
+      },
+      "silent": {
+        "duration": 8,
+        "beats": {
+          "axes": 0.3,
+          "draw": 1,
+          "ref": 3
+        }
+      }
+    }
+  ]
+}

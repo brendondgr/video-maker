@@ -1,0 +1,21 @@
+{
+ "duration": 1.8,
+ "sample_rate": 24000,
+ "words": [
+  {
+   "w": "Let's",
+   "start": 0.4,
+   "end": 0.688
+  },
+  {
+   "w": "follow",
+   "start": 0.688,
+   "end": 1.1
+  },
+  {
+   "w": "it.",
+   "start": 1.1,
+   "end": 1.525
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 ---
 name: video-maker
-description: Plan, narrate, build, validate and render motion-graphics videos (explainers, paper/concept summaries, data stories, promos) as deterministic HTML + GSAP compositions, with local GPU text-to-speech (Kokoro), word-timed captions, sound effects and a mastered mix, rendered to 1080p/4K MP4 by either its own renderer or HyperFrames'. Includes the HyperFrames skills (motion rules, transitions, design presets, audio, media, CLI, Studio) as references. Use whenever the user asks to make, narrate, caption, animate or render a video, whether they give a shot list ("directed") or just hand over documents ("open"). Any length, aspect ratio or frame rate.
+description: Plan, narrate, illustrate, build, validate and render motion-graphics videos (explainers, paper/concept summaries, data stories, promos) as deterministic HTML + GSAP compositions, with step-by-step SVG diagrams timed to the narration, generated illustrations (bundled imagegen: Codex or local ComfyUI), local GPU text-to-speech (Kokoro), word-timed captions, sound effects and a mastered mix, rendered to 1080p/4K MP4 by either its own renderer or HyperFrames'. Includes the HyperFrames skills (motion rules, transitions, design presets, audio, media, CLI, Studio) as references. Use whenever the user asks to make, narrate, caption, animate or render a video, whether they give a shot list ("directed") or just hand over documents ("open"). Any length, aspect ratio or frame rate.
 ---
 
 # video-maker
@@ -16,10 +16,17 @@ two renderers, two linters and the HyperFrames Studio editor all work on the sam
 ten vendored HyperFrames skills serve as reference libraries for motion, design, audio and media.
 
 ```
-brief.md ─► storyboard.json ─► design ─► scenes/*.js ─► voiceover ─► QA gates ─► render ─► verify ─► deliver
- (what/why)  (scenes, narration,  (preset/   (one file     (TTS → retime   (plan, lint,   (vm or hf  (file,     (~/Videos/…)
-              beats, transitions)  palette)   per scene)    → captions/mix) runtime, HF, eyes) engine)   audio)
+brief.md ─► storyboard.json ─► PLAN.md ─► images ─► voiceover ─► scenes/*.js ─► QA gates ─► render ─► verify ─► deliver
+ (what/why)  (scenes, narration,  (shown to   (generated  (TTS → retime  (scene kit;     (lint, runtime,  (vm or hf  (file,     (~/Videos/…)
+              beats, visuals,      the user)   illustr.,   → captions/    diagrams built  HF, eyes)        engine)   audio)
+              images, roles)                   background)  mix)          on the words)
 ```
+
+**How scenes look is standardised** (`references/visual-playbook.md`): each idea gets the right
+medium. That means SVG diagrams built step by step with each step landing on the word that
+names it, charts built in reading order, illustrative UI mock-ups, and generated illustrations
+for scenes and metaphors. Frames are filled, never dead, and honest about their data. Apply the
+playbook by default; the user doesn't have to ask.
 
 `SKILL_DIR` means the directory containing this file. Scripts take the **project directory** as
 their first argument and live in `$SKILL_DIR/engine/scripts/`.
@@ -35,6 +42,8 @@ node "$SKILL_DIR/engine/scripts/doctor.mjs" --tts  # ✖ must be fixed; ▲ = op
 Requirements:
 - **Engine:** Node ≥ 18 (≥ 22 for HyperFrames), FFmpeg, Chromium.
 - **Narration:** `kokoro-tts`, a single environment at `~/venvs/kokoro` with a launcher on PATH.
+- **Illustrations (optional):** `jq`, `python3`, plus at least one backend: the Codex CLI
+  (`codex login`) or a local ComfyUI (`comfyui start`, port 8199 or `COMFY_URL`).
 
 Per-OS and per-GPU steps, for AMD ROCm, NVIDIA CUDA, Intel XPU, Apple MPS and CPU, are in
 `references/install.md`.
@@ -50,7 +59,7 @@ Pin the spec. When something is unstated, use the default below and say you assu
 
 | Spec | Default | Notes |
 |---|---|---|
-| Length | open: 45–90 s · directed: as asked | about one scene per 4–7 s; narration ≈ 2.3–2.6 words/s (30 s ≈ 70 words, 60 s ≈ 140, 5 min ≈ 650–700) |
+| Length | open: 45–90 s · directed: as asked | about one scene per 4–7 s; narration ≈ 2.3–2.5 words/s (30 s ≈ 65 words, 60 s ≈ 125, 3 min ≈ 370, 10 min ≈ 1,300); over ~5 min see `long-form.md` |
 | Resolution | **1080p** (1920×1080) | the only other output is **4K** (`--4k`). Drafts keep full resolution. |
 | Aspect / fps | 16:9 · 30 fps | presets: `1080p 4k vertical square portrait cinema` |
 | Voice | narrated + captioned when `kokoro-tts` is installed | voice `af_heart` or `am_michael`, speed 1.0; silent if the user asks |
@@ -81,6 +90,8 @@ Fill `brief.md` **before** storyboarding:
 - at most 5 key messages;
 - an **evidence bank**: every number, quote, equation, figure and diagram worth showing, each with
   its source (file + page).
+- **Assumptions made**: the look, voice, which values are approximate or illustrative, and which
+  mock-ups are illustrative.
 
 In open mode, read every document fully first; the evidence bank is where accuracy is won or
 lost. Never invent data. If a chart needs numbers the sources lack, label it *illustrative* on
@@ -99,15 +110,43 @@ Write `storyboard.json` (schema: `references/storyboard-schema.md`). For each sc
 - `transition_in`: pick **2–3 transition types for the whole video** and repeat them.
 - optional `sfx` cues.
 
+Also decide the **medium of every scene** (`visual-playbook.md` § 1: diagram, chart, UI mock-up,
+illustration, kinetic type). Write the build order and the cue word of each step into
+`visual.notes`. Declare recurring actors in `style.roles` and the illustrations in
+`storyboard.images` (a shared style key plus one prompt per image, `references/images.md`). For
+technical or long videos, write the narration in **speaker style** (`voiceover.md` § Speaker
+style): open on a story, one metaphor per hard concept, a worked example per rule, and the
+limitations at the end.
+
 Choose an arc from `references/workflow.md` §3 and visuals from `references/visual-catalog.md`;
 the HyperFrames blueprints and motion rules are listed there too.
 
 ```bash
 node "$SKILL_DIR/engine/scripts/validate-storyboard.mjs" videos/<slug> --plan-only
 ```
-Fix every error. Then **checkpoint**: show the user a compact scene table (id · seconds · purpose ·
-visual · first words of narration). Wait for approval if they are present and the video is over
-~60 s or the mode is open; otherwise continue.
+Fix every error. Then write the plan and show it:
+
+```bash
+node "$SKILL_DIR/engine/scripts/plan.mjs" videos/<slug>       # → PLAN.md (overview, assets, scene table, per-scene details) + SCRIPT.md
+```
+
+**Checkpoint:** give the user `PLAN.md` and `SCRIPT.md`. Wait for approval if they're present
+and the video is over ~60 s or the mode is open, unless they said to proceed without asking. Re-run
+`plan.mjs` after the voice pass so both files carry the final timecodes, and deliver them with the
+video.
+
+## 3b · Illustrations (background)
+
+```bash
+node "$SKILL_DIR/engine/scripts/images.mjs" videos/<slug>     # run_in_background: true; don't poll
+```
+
+This generates every `storyboard.images` item through the bundled imagegen dispatcher
+(`imagegen/`). Codex handles complex editorial scenes (3 at a time); local ComfyUI is free and fast
+(one at a time). Each finished image becomes `assets/img/<name>.jpg`, sized to cover the canvas.
+Unchanged prompts are skipped on the next run. When it finishes, **open
+`qa/images-contact-sheet.png`**; the red frames show the canvas crop. Redo bad ones by changing
+one prompt axis (`--only <name> --force`). Details: `references/images.md`.
 
 ## 4 · Design
 
@@ -126,6 +165,19 @@ node "$SKILL_DIR/engine/scripts/design.mjs" videos/<slug> --preset blue-professi
 To build a look by hand instead, set `storyboard.style` directly (`references/motion-design.md`).
 
 ## 5 · Build: one file per scene
+
+Build every scene to `visual-playbook.md`, using the **scene kit** (`const K = VMX.kit`): image
+backgrounds and panels, role headers, chapter cards, chips, cards, app mock-ups, step trackers,
+and step-by-step diagrams and charts (`K.flow`, `K.lanes`, `K.clusters`, `K.rankList`, `K.trend`,
+`K.dotPlot`, `K.funnel`, `K.imageCards`). The rules that matter most:
+- every reveal lands on its word;
+- nothing is too small;
+- no dead frames (ghost the diagram, then light it up);
+- label anything approximate or illustrative.
+
+Videos over ~5 min: once voice and images are done, build chapters in parallel with sub-agents,
+each in its own working copy with the brief from `templates/scene-brief.md`
+(`references/long-form.md`).
 
 Each scene `id` maps to `scenes/<id>.js`:
 
@@ -198,7 +250,8 @@ node "$SKILL_DIR/engine/scripts/qa.mjs" videos/<slug>      # → qa/report.md + 
 | 3b · HyperFrames check | the same page through HF's lint/layout/motion/contrast sweep (transition-window overlaps count as info) |
 | 4 · snapshots | contact sheets |
 
-**Then Read every contact sheet** and score it with the rubric in `references/validation.md`. The
+**Then Read every contact sheet** and score it with the rubric in `references/validation.md` and
+the explainer checklist in `visual-playbook.md` § 8. The
 gates catch mechanics; only looking catches a chart that says the wrong thing, a cramped layout, a
 caption covering a label, or a 3D camera pointing at nothing.
 - To look at specific moments: `snapshot.mjs <project> --scene <id>` or `--times a,b,c`.
@@ -258,7 +311,10 @@ Extend it by adding rather than forking.
 | `references/workflow.md` | Every video: intake questions, digest, arcs, pacing and narration budgets, long-form structure |
 | `references/storyboard-schema.md` | Writing or editing storyboard.json (scenes, beats and cues, audio, captions, sfx, overlays) |
 | `references/composition-contract.md` | Writing scene code: `ctx`, `VMX.*`, overlays, transitions, styling, 3D, assets |
-| `references/visual-catalog.md` | Choosing how to show each idea; HyperFrames blueprints and rules mapped to our helpers |
+| `references/visual-playbook.md` | **Every video**: medium per idea, step-by-step builds on the words, sizes, colour roles, structure, speaker style visuals, data honesty, review checklist |
+| `references/images.md` | Generated illustrations: planning, style key, prompts, backends, `images.mjs`, review, using images in scenes |
+| `references/long-form.md` | Videos over ~5 min: word budgets, structure, parallel scene builds with sub-agents |
+| `references/visual-catalog.md` | Choosing how to show each idea; HyperFrames blueprints and rules mapped to our helpers and the scene kit |
 | `references/motion-design.md` | Timing, easing, transitions, typography, colour, layout, design presets |
 | `references/voiceover.md` | Narration, voices, retiming, captions, SFX, music, loudness |
 | `references/validation.md` | Gates, the visual rubric, common failures and fixes |
@@ -266,4 +322,7 @@ Extend it by adding rather than forking.
 | `references/hyperframes.md` | The bridge, the two authoring modes, translating HF snippets, where each HF topic lives |
 | `references/install.md` | Installing on Linux/macOS/Windows for each GPU type; TTS troubleshooting |
 | `vendor/hyperframes/skills/*` | HyperFrames' own references (routed from `references/hyperframes.md`) |
+| `imagegen/reference/*` | The image dispatcher's internals (spec, manifest, adding a backend) and prompt craft |
+| `templates/scene-brief.md` | The brief given to each sub-agent in a parallel build |
 | `examples/gradient-descent/` | A complete, passing project that exercises most helpers |
+| `examples/web-request/` | A small narrated project using the scene kit, roles and generated illustrations |

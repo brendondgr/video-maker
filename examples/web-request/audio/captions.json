@@ -1,0 +1,421 @@
+{
+  "groups": [
+    {
+      "i": 0,
+      "scene": "hook",
+      "text": "Every time you click a link,",
+      "start": 0.675,
+      "end": 2.742,
+      "words": [
+        {
+          "w": "Every",
+          "start": 0.675,
+          "end": 0.988
+        },
+        {
+          "w": "time",
+          "start": 0.988,
+          "end": 1.4
+        },
+        {
+          "w": "you",
+          "start": 1.4,
+          "end": 1.562
+        },
+        {
+          "w": "click",
+          "start": 1.562,
+          "end": 1.85
+        },
+        {
+          "w": "a",
+          "start": 1.85,
+          "end": 1.963
+        },
+        {
+          "w": "link,",
+          "start": 1.963,
+          "end": 2.625
+        }
+      ]
+    },
+    {
+      "i": 1,
+      "scene": "hook",
+      "text": "a tiny message races across",
+      "start": 2.762,
+      "end": 4.775,
+      "words": [
+        {
+          "w": "a",
+          "start": 2.762,
+          "end": 2.887
+        },
+        {
+          "w": "tiny",
+          "start": 2.887,
+          "end": 3.362
+        },
+        {
+          "w": "message",
+          "start": 3.362,
+          "end": 3.887
+        },
+        {
+          "w": "races",
+          "start": 3.887,
+          "end": 4.375
+        },
+        {
+          "w": "across",
+          "start": 4.375,
+          "end": 4.775
+        }
+      ]
+    },
+    {
+      "i": 2,
+      "scene": "hook",
+      "text": "the world and back in",
+      "start": 4.775,
+      "end": 5.837,
+      "words": [
+        {
+          "w": "the",
+          "start": 4.775,
+          "end": 4.912
+        },
+        {
+          "w": "world",
+          "start": 4.912,
+          "end": 5.25
+        },
+        {
+          "w": "and",
+          "start": 5.25,
+          "end": 5.388
+        },
+        {
+          "w": "back",
+          "start": 5.388,
+          "end": 5.75
+        },
+        {
+          "w": "in",
+          "start": 5.75,
+          "end": 5.837
+        }
+      ]
+    },
+    {
+      "i": 3,
+      "scene": "hook",
+      "text": "a fraction of a second.",
+      "start": 5.837,
+      "end": 7.65,
+      "words": [
+        {
+          "w": "a",
+          "start": 5.837,
+          "end": 5.912
+        },
+        {
+          "w": "fraction",
+          "start": 5.912,
+          "end": 6.362
+        },
+        {
+          "w": "of",
+          "start": 6.362,
+          "end": 6.438
+        },
+        {
+          "w": "a",
+          "start": 6.438,
+          "end": 6.537
+        },
+        {
+          "w": "second.",
+          "start": 6.537,
+          "end": 7.35
+        }
+      ]
+    },
+    {
+      "i": 4,
+      "scene": "ch1",
+      "text": "Let's follow it.",
+      "start": 9.433,
+      "end": 10.858,
+      "words": [
+        {
+          "w": "Let's",
+          "start": 9.433,
+          "end": 9.721
+        },
+        {
+          "w": "follow",
+          "start": 9.721,
+          "end": 10.133
+        },
+        {
+          "w": "it.",
+          "start": 10.133,
+          "end": 10.558
+        }
+      ]
+    },
+    {
+      "i": 5,
+      "scene": "hops",
+      "text": "Your browser asks DNS",
+      "start": 12.508,
+      "end": 14.483,
+      "words": [
+        {
+          "w": "Your",
+          "start": 12.508,
+          "end": 12.695
+        },
+        {
+          "w": "browser",
+          "start": 12.695,
+          "end": 13.283
+        },
+        {
+          "w": "asks",
+          "start": 13.283,
+          "end": 13.783
+        },
+        {
+          "w": "DNS",
+          "start": 13.783,
+          "end": 14.483
+        }
+      ]
+    },
+    {
+      "i": 6,
+      "scene": "hops",
+      "text": "for the address,",
+      "start": 14.483,
+      "end": 15.651,
+      "words": [
+        {
+          "w": "for",
+          "start": 14.483,
+          "end": 14.595
+        },
+        {
+          "w": "the",
+          "start": 14.595,
+          "end": 14.733
+        },
+        {
+          "w": "address,",
+          "start": 14.733,
+          "end": 15.533
+        }
+      ]
+    },
+    {
+      "i": 7,
+      "scene": "hops",
+      "text": "sends the request to a server,",
+      "start": 15.671,
+      "end": 17.775,
+      "words": [
+        {
+          "w": "sends",
+          "start": 15.671,
+          "end": 16.033
+        },
+        {
+          "w": "the",
+          "start": 16.033,
+          "end": 16.133
+        },
+        {
+          "w": "request",
+          "start": 16.133,
+          "end": 16.633
+        },
+        {
+          "w": "to",
+          "start": 16.633,
+          "end": 16.758
+        },
+        {
+          "w": "a",
+          "start": 16.758,
+          "end": 16.883
+        },
+        {
+          "w": "server,",
+          "start": 16.883,
+          "end": 17.658
+        }
+      ]
+    },
+    {
+      "i": 8,
+      "scene": "hops",
+      "text": "and the server fetches your",
+      "start": 17.795,
+      "end": 19.096,
+      "words": [
+        {
+          "w": "and",
+          "start": 17.795,
+          "end": 17.92
+        },
+        {
+          "w": "the",
+          "start": 17.92,
+          "end": 18.033
+        },
+        {
+          "w": "server",
+          "start": 18.033,
+          "end": 18.483
+        },
+        {
+          "w": "fetches",
+          "start": 18.483,
+          "end": 18.908
+        },
+        {
+          "w": "your",
+          "start": 18.908,
+          "end": 19.096
+        }
+      ]
+    },
+    {
+      "i": 9,
+      "scene": "hops",
+      "text": "data from a database.",
+      "start": 19.096,
+      "end": 21.058,
+      "words": [
+        {
+          "w": "data",
+          "start": 19.096,
+          "end": 19.458
+        },
+        {
+          "w": "from",
+          "start": 19.458,
+          "end": 19.596
+        },
+        {
+          "w": "a",
+          "start": 19.596,
+          "end": 19.695
+        },
+        {
+          "w": "database.",
+          "start": 19.695,
+          "end": 20.758
+        }
+      ]
+    },
+    {
+      "i": 10,
+      "scene": "latency",
+      "text": "And with caching,",
+      "start": 22.683,
+      "end": 23.851,
+      "words": [
+        {
+          "w": "And",
+          "start": 22.683,
+          "end": 22.82
+        },
+        {
+          "w": "with",
+          "start": 22.82,
+          "end": 22.995
+        },
+        {
+          "w": "caching,",
+          "start": 22.995,
+          "end": 23.758
+        }
+      ]
+    },
+    {
+      "i": 11,
+      "scene": "latency",
+      "text": "each repeat visit gets faster,",
+      "start": 23.871,
+      "end": 26.05,
+      "words": [
+        {
+          "w": "each",
+          "start": 23.871,
+          "end": 24.183
+        },
+        {
+          "w": "repeat",
+          "start": 24.183,
+          "end": 24.583
+        },
+        {
+          "w": "visit",
+          "start": 24.583,
+          "end": 24.908
+        },
+        {
+          "w": "gets",
+          "start": 24.908,
+          "end": 25.17
+        },
+        {
+          "w": "faster,",
+          "start": 25.17,
+          "end": 25.933
+        }
+      ]
+    },
+    {
+      "i": 12,
+      "scene": "latency",
+      "text": "dropping below the one second mark.",
+      "start": 26.07,
+      "end": 28.658,
+      "words": [
+        {
+          "w": "dropping",
+          "start": 26.07,
+          "end": 26.558
+        },
+        {
+          "w": "below",
+          "start": 26.558,
+          "end": 26.908
+        },
+        {
+          "w": "the",
+          "start": 26.908,
+          "end": 27.046
+        },
+        {
+          "w": "one",
+          "start": 27.046,
+          "end": 27.346
+        },
+        {
+          "w": "second",
+          "start": 27.346,
+          "end": 27.708
+        },
+        {
+          "w": "mark.",
+          "start": 27.708,
+          "end": 28.358
+        }
+      ]
+    }
+  ]
+}

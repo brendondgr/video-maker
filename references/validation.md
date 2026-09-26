@@ -59,6 +59,11 @@ Stills at ~12/52/92 % of every scene plus each beat, labelled, tiled into
 
 ### Visual review rubric (✓ / ~ / ✗ per scene)
 
+Also run the explainer checklist in `visual-playbook.md` § 8 (too small, dead frames, reveals on
+their words, overlaps in settled frames, over-broad claims, missing "illustrative" labels,
+unfinished counters, the caption band).
+
+
 1. **Message** — could someone state the scene's `purpose` from the settled frame alone?
 2. **Accuracy** — numbers, labels, units, equations and axes match the evidence bank; illustrative data labelled.
 3. **Focal point** — one obvious thing to look at; hierarchy clear in < 1 s.

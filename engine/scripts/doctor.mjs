@@ -32,6 +32,14 @@ const opt = (good, what, fix) => console.log(`${good ? '✔' : '▲'} ${what}${!
 opt(major >= 22, `node ${process.versions.node} for HyperFrames (needs ≥ 22)`, 'install Node 22+ (nvm install 22 / dnf install nodejs22 / brew install node@22)');
 opt(fs.existsSync(HF_BIN), `hyperframes@${HF_VERSION} CLI (render --engine hf, hf.mjs, QA gate 3b)`, `cd ${ENGINE_DIR} && npm install`);
 opt(fs.existsSync(path.join(SKILL_DIR, 'vendor', 'hyperframes', 'skills', 'hyperframes-core', 'SKILL.md')), 'vendored HyperFrames skills (references)', `node ${path.join(ENGINE_DIR, 'scripts', 'sync-hyperframes.mjs')}`);
+// Optional: illustrations (images.mjs → bundled imagegen; references/images.md).
+opt(!!(await which('jq')), 'jq (imagegen dispatcher)', 'dnf/apt/pacman install jq · brew install jq');
+opt(!!(await which('codex')), 'codex CLI (image backend "codex")', 'npm i -g @openai/codex && codex login');
+{
+  const url = (process.env.COMFY_URL || 'http://127.0.0.1:8199') + '/system_stats';
+  let up = false; try { const r = await fetch(url, { signal: AbortSignal.timeout(1500) }); up = r.ok; } catch { /* down */ }
+  opt(up, `ComfyUI reachable at ${url.replace('/system_stats', '')} (image backend "comfy")`, 'comfyui start   (or set COMFY_URL); model families are install-specific: imagegen/reference/backends.md');
+}
 const tts = process.env.VM_TTS || 'kokoro-tts';
 const hasTTS = !!(await which(tts));
 opt(hasTTS, `${tts} on PATH (narration via voiceover.mjs)`, `bash ${path.join(SKILL_DIR, 'tts', 'install.sh')}   (Windows: tts\\install.ps1) — see references/install.md`);
