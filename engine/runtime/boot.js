@@ -6,7 +6,9 @@
  */
 (function () {
   'use strict';
-  var E = '/_engine/';
+  // Engine base = the directory above this file, so projects work under any static server
+  // (ours at /_engine/, HyperFrames' through the project's _engine link).
+  var E = new URL('../', (document.currentScript && document.currentScript.src) || (location.origin + '/_engine/runtime/boot.js')).href;
   var LIBS = [
     'node_modules/gsap/dist/gsap.min.js',
     'node_modules/gsap/dist/SplitText.min.js',

@@ -35,7 +35,9 @@
   gsap.ticker.lagSmoothing(0);
 
   var params = new URLSearchParams(global.location.search);
-  var RENDER = params.has('render');
+  // Render mode is the default so external players (HyperFrames render/Studio) get a clean
+  // frame; our own scrubber UI mounts only with ?preview (what preview.mjs opens).
+  var RENDER = !params.has('preview');
   var builders = {};
   var order = [];
 
@@ -196,7 +198,10 @@
       } catch (e) { /* non-fatal */ }
     }
 
-    var master = gsap.timeline({ paused: true, defaults: { ease: (sb.style && sb.style.motion && sb.style.motion.ease) || 'power3.out' } });
+    // Kept in a variable rather than read back from master.vars: HyperFrames' page wraps
+    // gsap.timeline and the vars object it returns doesn't carry `defaults`.
+    var tlDefaults = { ease: (sb.style && sb.style.motion && sb.style.motion.ease) || 'power3.out' };
+    var master = gsap.timeline({ paused: true, defaults: tlDefaults });
     var sceneRecords = [];
     var cursor = 0;
     var scenes = sb.scenes || [];
@@ -214,7 +219,7 @@
       var trDur = i === 0 ? 0 : Math.min(+tr.duration || 0, dur, sceneRecords[i - 1].duration);
       var at = Math.max(0, cursor - trDur);
 
-      var tl = gsap.timeline({ defaults: master.vars.defaults });
+      var tl = gsap.timeline({ defaults: tlDefaults });
       var frameFns = [];
       var ctx = makeCtx(spec, sEl, tl, frameFns, sb, canvas, at);
 
@@ -252,10 +257,19 @@
     // Guarantee the master's duration equals the storyboard's total.
     master.set({}, {}, total);
 
-    var lastT = -1;
+    var lastT = -1, seeking = false;
     function seek(t) {
       t = clamp(+t || 0, 0, total);
+      seeking = true;
       master.totalTime(t, true);           // suppressEvents: callbacks never fire
+      seeking = false;
+      return applyFrame(t);
+    }
+    // External seek-based renderers (HyperFrames) only move the GSAP timeline, so the
+    // per-frame work (scene visibility, onFrame drawing) also runs from the master's
+    // onUpdate. Our own seek suppresses events and calls applyFrame itself.
+    master.eventCallback('onUpdate', function () { if (!seeking) applyFrame(master.time()); });
+    function applyFrame(t) {
       for (var k = 0; k < sceneRecords.length; k++) {
         var r = sceneRecords[k];
         // End is exclusive, except the final scene which owns the last frame.

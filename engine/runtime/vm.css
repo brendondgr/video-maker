@@ -3,10 +3,8 @@
  * fonts -> --f-*). --u is 1/100 of the canvas short side: size type and spacing
  * in calc(var(--u) * n) so the same scene code works at 16:9, 9:16 and 1:1.
  */
-@import url('/_engine/node_modules/@fontsource-variable/inter/index.css');
-@import url('/_engine/node_modules/@fontsource-variable/jetbrains-mono/index.css');
-@import url('/_engine/node_modules/@fontsource-variable/source-serif-4/index.css');
-@import url('/_engine/node_modules/katex/dist/katex.min.css');
+/* Bundled fonts + KaTeX CSS live in ../fonts.css (linked by index.html) so no path
+ * here climbs above the project root — HyperFrames' linter and Studio reject "../". */
 
 :root {
   --c-bg: #0b0f17;

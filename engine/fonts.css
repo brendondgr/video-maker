@@ -1,0 +1,5 @@
+/* Bundled web fonts and KaTeX styles. Paths are relative to this file (the engine root). */
+@import url('node_modules/@fontsource-variable/inter/index.css');
+@import url('node_modules/@fontsource-variable/jetbrains-mono/index.css');
+@import url('node_modules/@fontsource-variable/source-serif-4/index.css');
+@import url('node_modules/katex/dist/katex.min.css');

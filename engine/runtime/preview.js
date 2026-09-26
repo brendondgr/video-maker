@@ -1,4 +1,4 @@
-/* Preview player: only mounted when the page is opened WITHOUT ?render.
+/* Preview player: only mounted when the page is opened WITH ?preview.
  * Scales the stage to fit the window and adds play / scrub / scene markers.
  * Playback uses requestAnimationFrame to advance time and calls the same
  * __vm.seek(t) the renderer uses, so what you scrub is what renders.

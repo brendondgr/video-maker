@@ -4,6 +4,7 @@
 //   node render.mjs <project> [--quality draft|standard|high] [--fps 30] [--height 2160 | --scale 2]
 //                             [--workers 4] [--from 0 --to 10 | --scene id] [--format mp4|webm|png]
 //                             [--codec h264|h265] [--audio voice.wav] [--out out/video.mp4] [--chrome path]
+//                             [--engine vm|hf]   (hf: HyperFrames renderer; also --format mov|gif, --docker, --gpu)
 //
 // Every frame i is produced by window.__vm.seek(i / fps) followed by a screenshot, so
 // output is deterministic and workers can render disjoint frame ranges in parallel.
@@ -33,6 +34,8 @@ async function main() {
   if (args.quality === 'draft' && !args.scale && !args.height) scale = Math.min(1, 720 / Math.min(canvas.width, canvas.height));
   const format = args.format || 'mp4';
   const codec = args.codec || 'h264';
+  if ((args.engine || 'vm') === 'hf') return renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format });
+  if (args.engine && args.engine !== 'vm') throw new Error('--engine must be vm or hf');
   if (!(await which('ffmpeg')) && format !== 'png') throw new Error('ffmpeg not found on PATH');
 
   const server = await serve(dir);
@@ -158,6 +161,46 @@ async function renderRange({ browser, server, canvas, scale, fps, a, b, q, seg, 
   const errs = await page.evaluate(() => window.__vm.errors.slice());
   await context.close();
   if (errs.length) console.warn(`\n  ⚠ runtime errors during render (${a}-${b}): ${errs.join('; ')}`);
+}
+
+// --engine hf: the same project through HyperFrames' renderer (Puppeteer + beginFrame capture;
+// adds mov/gif/png-sequence, Docker and GPU encode). Audio declared in the page is mixed by
+// HyperFrames; an explicit --audio file is muxed afterwards exactly like the vm engine does.
+async function renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format }) {
+  if (args.scene || args.from != null || args.to != null) throw new Error('--engine hf renders whole compositions; use --engine vm for --scene/--from/--to');
+  const HFQ = { draft: 'draft', standard: 'looks', high: 'delivery' };
+  const quality = HFQ[args.quality || 'standard'];
+  const outH = Math.round(canvas.height * scale / 2) * 2, outW = Math.round(canvas.width * scale / 2) * 2;
+  const slug = (sb.meta?.slug || path.basename(dir)).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video';
+  const ext = { mp4: '.mp4', webm: '.webm', mov: '.mov', gif: '.gif', png: '' }[format];
+  if (ext == null) throw new Error('--format for --engine hf: mp4, webm, mov, gif or png');
+  const out = path.resolve(args.out || path.join(dir, 'out', `${slug}-${outW}x${outH}-${fps}fps-hf${args.quality === 'draft' ? '-draft' : ''}${ext}`));
+  await fsp.mkdir(path.dirname(out), { recursive: true });
+  // HyperFrames renders at the composition size or 4K; any other size is scaled afterwards.
+  const native = scale === 1;
+  const hf4k = scale === 2 && canvas.height === 1080 && canvas.width === 1920;
+  const post = !native && !hf4k;
+  const tmp = (args.audio || post) ? await fsp.mkdtemp(path.join(os.tmpdir(), 'vm-hf-')) : null;
+  const target = tmp && format !== 'png' ? path.join(tmp, 'video' + ext) : out;
+  if (post && format === 'png') throw new Error('--engine hf with --format png renders at native size only');
+  const argv = ['render', '-o', target, '--quality', quality, '--fps', String(fps),
+    '--format', format === 'png' ? 'png-sequence' : format];
+  if (hf4k) argv.push('--resolution', '4k');
+  if (args.workers) argv.push('--workers', String(args.workers));
+  if (args.docker) argv.push('--docker');
+  if (args.gpu) argv.push('--gpu');
+  if (args.strict) argv.push('--strict');
+  const { runHF } = await import('./lib/hf.mjs');
+  console.log(`▶ ${path.basename(dir)} via HyperFrames: hyperframes ${argv.join(' ')}`);
+  const { code } = await runHF(dir, argv, { telemetry: !!args.telemetry });
+  if (code !== 0) throw new Error(`hyperframes render exited with ${code}`);
+  if (target !== out) {
+    const vf = post ? ['-vf', `scale=${outW}:${outH}:flags=lanczos`, '-c:v', format === 'webm' ? 'libvpx-vp9' : 'libx264', '-crf', '20', '-pix_fmt', 'yuv420p'] : ['-c:v', 'copy'];
+    const audio = args.audio ? ['-i', path.resolve(args.audio), '-map', '0:v', '-map', '1:a', '-c:a', format === 'webm' ? 'libopus' : 'aac', '-b:a', '192k', '-shortest'] : ['-map', '0'];
+    await run('ffmpeg', ['-y', '-v', 'error', '-i', target, ...audio, ...vf, ...(format === 'mp4' ? ['-movflags', '+faststart'] : []), out]);
+    await fsp.rm(tmp, { recursive: true, force: true });
+  }
+  console.log(`✔ wrote ${out}`);
 }
 
 main().catch((e) => { console.error('\n✖ render failed:', e.message); process.exit(1); });

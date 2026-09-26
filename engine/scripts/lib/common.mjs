@@ -5,6 +5,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { syncProject } from './hf.mjs';
 
 export const ENGINE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 export const SKILL_DIR = path.resolve(ENGINE_DIR, '..');
@@ -32,6 +33,7 @@ export function projectDir(args) {
   if (!fs.existsSync(path.join(dir, 'storyboard.json'))) {
     throw new Error(`no storyboard.json in ${dir} — pass the project directory as the first argument`);
   }
+  syncProject(dir);   // _engine link + HyperFrames root attributes (derived from storyboard.json)
   return dir;
 }
 

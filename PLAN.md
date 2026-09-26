@@ -50,15 +50,17 @@ mirrors it. `[x]` = done and committed, `[~]` = in progress, `[ ]` = not started
 - [ ] `tts/install.ps1` for Windows (CUDA / ROCm gfx1151 wheels / CPU)
 
 ### Phase 1 — HyperFrames interop (every project is both)
-- [ ] Runtime: drive scene visibility + `onFrame` from a master `onUpdate` so any external seek
+- [x] Runtime: drive scene visibility + `onFrame` from a master `onUpdate` so any external seek
       (HyperFrames' adapter) produces the same frame as `__vm.seek`
-- [ ] Root element carries `data-composition-id="main" data-width data-height data-duration`,
+- [x] Root element carries `data-composition-id="main" data-width data-height data-duration`,
       kept in sync with storyboard.json by the scripts (duration must be static for HF)
-- [ ] Pin `hyperframes@0.8.77` in `engine/package.json`; `scripts/hf.mjs` bridge
+- [x] Pin `hyperframes@0.8.77` in `engine/package.json`; `scripts/hf.mjs` bridge
       (`lint | check | render | snapshot | preview | transcribe | remove-background | …`) with
       telemetry off by default (`HYPERFRAMES_NO_TELEMETRY=1`, override with `--telemetry`)
-- [ ] `render.mjs --engine hf` delegates to `hyperframes render`; parity test on the example
-      (same frames within tolerance)
+- [x] `render.mjs --engine hf` delegates to `hyperframes render`; parity test on the example
+      (same frames within tolerance) — PSNR 37.6 dB avg vs vm engine; 9 s vs 25 s for 50.7 s
+- [x] Engine paths made relative (`_engine` link per project, `engine/fonts.css`), render mode is
+      the default and our scrubber mounts only with `?preview`, so HF render/Studio get clean frames
 
 ### Phase 2 — HyperFrames knowledge in the skill
 - [ ] Vendor the 10 skills (`hyperframes`, `-core`, `-cli`, `-studio`, `-keyframes`,

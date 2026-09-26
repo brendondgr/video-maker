@@ -54,3 +54,6 @@ desktop.ini
 *.swp
 *.swo
 *~
+
+# --- video-maker: per-project link to the engine (created by the scripts) ---
+**/_engine

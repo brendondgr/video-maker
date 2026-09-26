@@ -3,20 +3,26 @@
 <head>
   <meta charset="utf-8">
   <title>video-maker composition</title>
+  <!-- _engine is a link to the video-maker engine (created by the scripts; git-ignored). -->
   <!-- Three.js is ESM-only; the import map lets `await ctx.import('three')` resolve it. -->
   <script type="importmap">
   { "imports": {
-      "three": "/_engine/node_modules/three/build/three.module.js",
-      "three/addons/": "/_engine/node_modules/three/examples/jsm/"
+      "three": "./_engine/node_modules/three/build/three.module.js",
+      "three/addons/": "./_engine/node_modules/three/examples/jsm/"
   } }
   </script>
-  <link rel="stylesheet" href="/_engine/runtime/vm.css">
+  <link rel="stylesheet" href="./_engine/fonts.css">
+  <link rel="stylesheet" href="./_engine/runtime/vm.css">
   <link rel="stylesheet" href="style.css">
+  <!-- HyperFrames looks for the registry; runtime/vm.js registers window.__timelines["main"]
+       once every scene has built. -->
+  <script>window.__timelines = window.__timelines || {};</script>
   <!-- Loads GSAP + plugins, D3, KaTeX, rough.js, the runtime and helpers, then
        one scenes/<id>.js per storyboard scene, then starts the timeline. -->
-  <script src="/_engine/runtime/boot.js"></script>
+  <script src="./_engine/runtime/boot.js"></script>
 </head>
 <body>
-  <div id="stage"></div>
+  <!-- HyperFrames root. data-* values are kept in sync with storyboard.json by the scripts. -->
+  <div id="stage" data-composition-id="main" data-width="1920" data-height="1080" data-duration="1" data-fps="30"></div>
 </body>
 </html>
