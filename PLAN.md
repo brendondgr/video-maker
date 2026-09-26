@@ -107,9 +107,9 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
       visual catalog
 
 ### Phase 5 — QA
-- [ ] `qa.mjs` runs `hyperframes lint --json` and `check --json` as extra gates (findings merged
-      into `qa/report.md`)
-- [ ] Generate HF `*.motion.json` assertions from beats (`appearsBy`) for `check`
+- [x] `qa.mjs` Gate 3b runs `hyperframes check --json` (lint + runtime + layout + motion +
+      contrast); findings merged into `qa/report.md`, transition-window overlaps downgraded to info
+- [ ] (later) Generate HF `*.motion.json` assertions from beats (`appearsBy`) for `check`
 
 ### Phase 6 — Install everywhere
 - [ ] `references/install.md`: Linux / macOS / Windows × AMD ROCm / NVIDIA CUDA / Intel XPU /
