@@ -10,7 +10,7 @@ import { sceneTimes, timelineTotal } from './hf.mjs';
 export const SFX_DIR = path.join(SKILL_DIR, 'vendor', 'hyperframes', 'skills', 'media-use', 'audio', 'assets', 'sfx');
 
 export const VO_DEFAULTS = {
-  provider: 'kokoro',   // kokoro (default) | breeze (non-commercial) | localtts — see lib/tts.mjs
+  provider: 'auto',     // auto: LocalTTS if running, else kokoro-tts/breeze-tts · kokoro · breeze · localtts (lib/tts.mjs)
   voice: 'af_heart', speed: 1.0, lang: 'a',
   instruction: null,    // breeze/localtts: describe the voice (no voice) or the delivery (with a voice)
   seed: 42, cfg_scale: null,
@@ -26,7 +26,8 @@ export const CAPTION_DEFAULTS = { enabled: false, max_words: 6, min_gap: 0.15, m
 export function voSettings(sb) {
   const own = sb.audio?.voiceover || {};
   const vo = Object.assign({}, VO_DEFAULTS, own);
-  if (vo.provider !== 'kokoro' && !('voice' in own)) vo.voice = null;   // af_heart is a Kokoro voice
+  // af_heart is a Kokoro voice: drop it when the settings ask for Breeze (a design needs no voice).
+  if (!('voice' in own) && (vo.provider === 'breeze' || (own.instruction && vo.provider !== 'kokoro'))) vo.voice = null;
   return vo;
 }
 

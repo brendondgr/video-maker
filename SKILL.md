@@ -45,8 +45,10 @@ Requirements:
 - **Narration:** `kokoro-tts` (default) and optionally `breeze-tts`, each in its own environment
   with a launcher on PATH, recorded in `~/.config/tts-engines/engines.json`. Run `setup.sh --plan`
   first and tell the user what it will install; install only once they agree, and install
-  Breeze only if they accept its research / non-commercial licence. An optional LocalTTS server
-  (`provider: "localtts"`) works too.
+  Breeze only if they accept its research / non-commercial licence. The planner also offers
+  **LocalTTS** (github.com/brendondgr/LocalTTS: an always-on server + web UI for the same
+  engines). The default `provider: "auto"` uses LocalTTS whenever it is running and falls
+  back to the local commands otherwise, so narration works either way.
 - **Illustrations (optional):** `jq`, `python3`, plus at least one backend: the Codex CLI
   (`codex login`) or a local ComfyUI (`comfyui start`, port 8199 or `COMFY_URL`).
 
@@ -227,8 +229,9 @@ node "$SKILL_DIR/engine/scripts/voiceover.mjs" videos/<slug>         # --force, 
 ```
 
 This one command does four things:
-- **Synthesize.** Each scene's narration goes through `audio.voiceover.provider`: `kokoro-tts`
-  (default), `breeze-tts` (a cloned/designed voice) or a LocalTTS server. Clips are cached per
+- **Synthesize.** Each scene's narration goes through `audio.voiceover.provider`, by default
+  `auto`: a running LocalTTS server, else `kokoro-tts` (stock voices) or `breeze-tts` (a
+  cloned/designed voice). If no engine is available it stops with the setup command. Clips are cached per
   line, so editing one line re-synthesizes one clip.
 - **Retime.** Each scene becomes as long as its narration needs, plus the pads and the next
   transition. Cued beats snap to their words and other beats scale. The silent plan is kept in

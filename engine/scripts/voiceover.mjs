@@ -22,7 +22,7 @@ import crypto from 'node:crypto';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, fmtTime } from './lib/common.mjs';
 import { syncProject, timelineTotal, sceneTimes } from './lib/hf.mjs';
 import { voSettings, retime, readWav, writeWav, narrationLead, captionGroups, toSRT, toVTT, sfxCues, buildMix, requiredDuration } from './lib/audio.mjs';
-import { synthesize, voiceKey, voiceLabel } from './lib/tts.mjs';
+import { synthesize, voiceKey, voiceLabel, engineFor } from './lib/tts.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
@@ -49,8 +49,8 @@ const clips = Object.fromEntries(narrated.map((s) => {
 const todo = args['mix-only'] ? [] : narrated.filter((s) => args.force || !fs.existsSync(clips[s.id].wav) || !fs.existsSync(clips[s.id].json));
 
 if (todo.length) {
-  console.log(`▶ synthesizing ${todo.length} clip(s) with ${voiceLabel(vo)}${vo.provider === 'kokoro' ? `, speed ${vo.speed}` : ''}`);
-  if (vo.provider === 'breeze' || (vo.provider === 'localtts' && vo.engine === 'breeze')) {
+  console.log(`▶ synthesizing ${todo.length} clip(s) with ${voiceLabel(vo)}${engineFor(vo) === 'kokoro' ? `, speed ${vo.speed}` : ''}`);
+  if (engineFor(vo) === 'breeze') {
     console.log('  note: Breeze TTS 2 audio is licensed for research and non-commercial use only');
   }
   await synthesize(vo, todo.map((s) => ({ id: s.id, text: s.narration.trim(), wav: clips[s.id].wav, json: clips[s.id].json })), clipDir);

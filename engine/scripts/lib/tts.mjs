@@ -2,31 +2,59 @@
 // item plus a timings JSON ({duration, sample_rate, words: [{w, start, end}]}), so retiming and
 // captions work the same whichever voice made the audio.
 //
-//   kokoro    `kokoro-tts --batch` (local, fast, Apache-2.0; the default)
+//   auto      (default) LocalTTS if it is running, else kokoro-tts / breeze-tts, whichever the
+//             voice needs (a Kokoro name → Kokoro; a saved voice or an instruction → Breeze)
+//   kokoro    `kokoro-tts --batch` (local, fast, Apache-2.0)
 //   breeze    `breeze-tts --batch` (local, voice clone / design / direction; NON-COMMERCIAL weights)
 //   localtts  a running LocalTTS server (this machine or a forwarded remote GPU), either engine
 //
-// Install kokoro/breeze with tts/setup.sh; LocalTTS is a separate, optional app.
+// Install everything with tts/setup.sh (it inspects the machine first; LocalTTS included).
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import { writeJSON } from './common.mjs';
+import { writeJSON, which } from './common.mjs';
 import { writeWav } from './audio.mjs';
 
-export const PROVIDERS = ['kokoro', 'breeze', 'localtts'];
+export const PROVIDERS = ['auto', 'kokoro', 'breeze', 'localtts'];
+const KOKORO_VOICE = /^[ab][fm]_[a-z]+$/;
 
-/** Everything that changes the audio, for the clip cache key. */
+/** Which model will speak: kokoro or breeze (whatever the transport). */
+export function engineFor(vo) {
+  if (vo.provider === 'kokoro' || vo.provider === 'breeze') return vo.provider;
+  if (vo.engine && vo.engine !== 'auto') return vo.engine;
+  if (vo.voice) return KOKORO_VOICE.test(vo.voice) ? 'kokoro' : 'breeze';
+  return vo.instruction ? 'breeze' : 'kokoro';
+}
+
+/** Everything that changes the audio, for the clip cache key. Keyed by engine, not transport:
+ *  Kokoro through LocalTTS and through kokoro-tts is the same model and the same audio. */
 export function voiceKey(vo) {
-  const base = [vo.provider, vo.voice, vo.speed, vo.lang];
-  if (vo.provider === 'kokoro') return base.join('␟');   // unchanged, so existing Kokoro clips stay cached
-  return [...base, vo.instruction, vo.seed, vo.cfg_scale, vo.engine].map((x) => x ?? '').join('␟');
+  const engine = engineFor(vo);
+  if (engine === 'kokoro') return ['kokoro', vo.voice || 'af_heart', vo.speed, vo.lang].join('␟');   // same key as before
+  return ['breeze', vo.voice, vo.instruction, vo.seed, vo.cfg_scale].map((x) => x ?? '').join('␟');
+}
+
+const localUrl = (vo) => (vo.url || process.env.LOCALTTS_URL || 'http://127.0.0.1:5040').replace(/\/+$/, '');
+async function reachable(url) {
+  try { const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(1500) }); return r.ok; } catch { return false; }
+}
+
+/** Resolve provider "auto": LocalTTS when it is up (preferred), else the local command. */
+export async function resolveProvider(vo) {
+  if (vo.provider !== 'auto') return vo;
+  if (await reachable(localUrl(vo))) return { ...vo, provider: 'localtts' };
+  const engine = engineFor(vo);
+  const cmd = engine === 'kokoro' ? (process.env.VM_TTS || 'kokoro-tts') : (process.env.VM_BREEZE_TTS || 'breeze-tts');
+  if (await which(cmd)) return { ...vo, provider: engine, voice: engine === 'kokoro' ? (vo.voice || 'af_heart') : vo.voice };
+  throw new Error(`no speech engine for this voice: LocalTTS is not running at ${localUrl(vo)} and ${cmd} is not installed. ` +
+    `Start LocalTTS (localtts start), or set up the engines: bash tts/setup.sh --plan (see references/install.md §2)`);
 }
 
 export function voiceLabel(vo) {
-  if (vo.provider === 'kokoro') return `${vo.voice} (kokoro)`;
-  const v = vo.voice || (vo.instruction ? `designed: "${vo.instruction}"` : 'default');
-  return `${v} (${vo.provider}${vo.provider === 'localtts' ? `/${vo.engine || 'auto'}` : ''})`;
+  const engine = engineFor(vo);
+  const v = vo.voice || (vo.instruction ? `designed: "${vo.instruction}"` : 'af_heart');
+  return `${v} (${engine}${vo.provider === 'localtts' ? ' via LocalTTS' : ''})`;
 }
 
 function runBatch(cmd, argv) {
@@ -59,47 +87,61 @@ export function estimateTimings(text, duration) {
 }
 
 async function viaLocalTTS(vo, items, log) {
-  const base = (vo.url || process.env.LOCALTTS_URL || 'http://127.0.0.1:5040').replace(/\/+$/, '');
-  try { const h = await fetch(`${base}/health`); if (!h.ok) throw new Error(h.statusText); }
-  catch { throw new Error(`LocalTTS is not reachable at ${base} (start it with \`localtts start\`, set audio.voiceover.url, or use provider kokoro/breeze)`); }
-  if ((vo.engine || 'auto') !== 'kokoro' && !vo.voice && vo.instruction) {
-    log(`  ! a designed voice through LocalTTS changes from clip to clip; save it once (LocalTTS: Voices → Design voice) and use its name, or use provider breeze`);
+  const base = localUrl(vo);
+  if (!(await reachable(base))) throw new Error(`LocalTTS is not reachable at ${base} (start it with \`localtts start\`, set audio.voiceover.url, or use provider kokoro/breeze)`);
+  const engine = engineFor(vo);
+  if (engine === 'breeze' && !vo.voice && vo.instruction) {
+    log('  ! a designed voice through LocalTTS changes from clip to clip; save it once (LocalTTS: Voices → Design voice) and use its name, or use provider breeze');
   }
-  const clips = [];
+  const pending = [];   // clips that still need word timings
   for (const it of items) {
-    const body = { text: it.text, engine: vo.engine || 'auto', stream: true, no_save: true, seed: vo.seed ?? 42, speed: vo.speed ?? 1 };
+    const body = { text: engine === 'kokoro' ? stripTags(it.text) : it.text, engine: vo.engine || 'auto', no_save: true,
+                   seed: vo.seed ?? 42, speed: vo.speed ?? 1, format: 'wav' };
     if (vo.voice) body.name = vo.voice;
-    if (vo.instruction) body.instruction = vo.instruction;
+    if (vo.instruction && engine === 'breeze') body.instruction = vo.instruction;
     if (vo.cfg_scale != null) body.cfg_scale = vo.cfg_scale;
+    if (engine === 'kokoro') body.timings = true; else body.stream = true;   // Kokoro knows its word times
     const r = await fetch(`${base}/v1/speech`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     if (!r.ok) throw new Error(`LocalTTS ${r.status}: ${await r.text()}`);
-    const rate = +r.headers.get('x-sample-rate') || 24000;
-    const pcm = Buffer.from(await r.arrayBuffer());
-    const samples = new Float32Array(pcm.length >> 1);
-    for (let i = 0; i < samples.length; i++) samples[i] = pcm.readInt16LE(i * 2) / 32768;
-    writeWav(it.wav, samples, rate);
-    clips.push({ it, rate, duration: samples.length / rate });
-    log(`  ${it.id}: ${(samples.length / rate).toFixed(2)}s (${r.headers.get('x-localtts-engine')}/${r.headers.get('x-localtts-voice')})`);
+    let duration, rate;
+    if ((r.headers.get('content-type') || '').includes('json')) {
+      const j = await r.json();
+      fs.mkdirSync(path.dirname(it.wav), { recursive: true });
+      fs.writeFileSync(it.wav, Buffer.from(j.audio, 'base64'));
+      rate = j.sample_rate; duration = j.timings.duration;
+      await writeJSON(it.json, j.timings);
+    } else {
+      rate = +r.headers.get('x-sample-rate') || 24000;
+      const buf = Buffer.from(await r.arrayBuffer());
+      if (r.headers.get('content-type')?.includes('pcm')) {
+        const samples = new Float32Array(buf.length >> 1);
+        for (let i = 0; i < samples.length; i++) samples[i] = buf.readInt16LE(i * 2) / 32768;
+        writeWav(it.wav, samples, rate); duration = samples.length / rate;
+      } else { fs.writeFileSync(it.wav, buf); duration = +r.headers.get('x-audio-duration') || (buf.length - 44) / 2 / rate; }
+      pending.push({ it, rate, duration });
+    }
+    log(`  ${it.id}: ${duration.toFixed(2)}s (${r.headers.get('x-localtts-engine') || engine}/${r.headers.get('x-localtts-voice') || vo.voice || 'default'})`);
   }
-  // Word timings: one /v1/align call for every clip (one Whisper load on the server).
+  if (!pending.length) return;
+  // Word timings for the rest: one /v1/align call (one Whisper load on the server).
   let aligned = null;
   try {
     const form = new FormData();
-    form.append('items', JSON.stringify(clips.map(({ it }) => ({ id: it.id, text: it.text }))));
-    for (const { it } of clips) form.append(`audio_${it.id}`, new Blob([fs.readFileSync(it.wav)], { type: 'audio/wav' }), `${it.id}.wav`);
+    form.append('items', JSON.stringify(pending.map(({ it }) => ({ id: it.id, text: it.text }))));
+    for (const { it } of pending) form.append(`audio_${it.id}`, new Blob([fs.readFileSync(it.wav)], { type: 'audio/wav' }), `${it.id}.wav`);
     const r = await fetch(`${base}/v1/align`, { method: 'POST', body: form });
     if (r.ok) aligned = (await r.json()).items;
     else log(`  ! LocalTTS could not align (${r.status}); word timings are estimated, so cues and captions are approximate`);
   } catch (e) { log(`  ! LocalTTS alignment failed (${e.message}); word timings are estimated`); }
-  for (const { it, rate, duration } of clips) {
-    const t = aligned?.[it.id] || { duration, sample_rate: rate, words: estimateTimings(it.text, duration), estimated: true };
-    await writeJSON(it.json, t);
+  for (const { it, rate, duration } of pending) {
+    await writeJSON(it.json, aligned?.[it.id] || { duration, sample_rate: rate, words: estimateTimings(it.text, duration), estimated: true });
   }
 }
 
 /** Synthesize `items` ([{id, text, wav, json}]) with the storyboard's voice settings. */
 export async function synthesize(vo, items, clipDir, log = console.log) {
   if (!PROVIDERS.includes(vo.provider)) throw new Error(`audio.voiceover.provider must be one of ${PROVIDERS.join(', ')} (got "${vo.provider}")`);
+  vo = await resolveProvider(vo);
   if (vo.provider === 'kokoro') {
     return viaCli(process.env.VM_TTS || 'kokoro-tts', { voice: vo.voice, speed: vo.speed, lang: vo.lang },
       items.map((it) => ({ ...it, text: stripTags(it.text) })), clipDir);

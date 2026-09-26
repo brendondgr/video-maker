@@ -30,6 +30,8 @@ BREEZE_HOME = Path(os.environ.get("BREEZE_HOME", HOME / "venvs" / "breeze-tts"))
 BREEZE_UPSTREAM = "https://github.com/breezeblue-ai/breeze-tts.git"
 BREEZE_WEIGHTS_REPO = "BreezeBlue/Breeze-TTS-2"
 BREEZE_TORCH = "torch==2.9.1 torchaudio==2.9.1"          # what upstream pins and tests
+LOCALTTS_REPO = "https://github.com/brendondgr/LocalTTS.git"
+LOCALTTS_DIR = Path(os.environ.get("LOCALTTS_DIR", DATA_DIR / "LocalTTS"))
 GIB = 1024 ** 3
 
 # Sizes for the plan (GB). Measured on the reference install.
@@ -177,6 +179,17 @@ def find_breeze_weights(reg: dict) -> str | None:
     return None
 
 
+def find_localtts() -> str | None:
+    """An installed LocalTTS checkout: via the `localtts` command, else the usual places."""
+    exe = which("localtts")
+    cands = [Path(exe).resolve().parent.parent] if exe else []
+    cands += [LOCALTTS_DIR, HOME / "Projects" / "LocalTTS", HOME / "LocalTTS"]
+    for c in cands:
+        if (c / "localtts" / "server.py").is_file():
+            return str(c)
+    return None
+
+
 def localtts_health() -> dict | None:
     url = os.environ.get("LOCALTTS_URL", "http://127.0.0.1:5040").rstrip("/")
     try:
@@ -311,6 +324,27 @@ def plan_breeze(sysinfo: dict, reg: dict) -> dict:
     return p
 
 
+def plan_localtts(sysinfo: dict) -> dict:
+    ex = sysinfo["existing"]["localtts"]
+    p = {"engine": "localtts", "notes": [], "warnings": [], "dir": ex.get("dir") or str(LOCALTTS_DIR),
+         "repo": LOCALTTS_REPO, "download_gb": 0.3}
+    service = {"Linux": "starts at boot (systemd user service)", "Darwin": "starts at login (LaunchAgent; untested)"}
+    p["notes"].append("optional app: an always-on API + web UI for these engines, freeing the GPU after 10 idle "
+                      "minutes; video-maker's default provider uses it whenever it is running")
+    if ex.get("health"):
+        p["status"] = "installed"
+        p["notes"].append(f"running at {ex['health']['url']} from {p['dir']}")
+    elif ex.get("dir"):
+        p["status"] = "installed"
+        p["warnings"].append(f"installed at {p['dir']} but not running: localtts start")
+    else:
+        p["status"] = "install"
+        p["notes"].append(f"{service.get(sysinfo['os'], 'runs in the background with `localtts start`')}")
+        if not sysinfo["tools"]["git"]:
+            p["status"], p["reason"] = "blocked", "git is required to fetch LocalTTS"
+    return p
+
+
 def probe() -> dict:
     reg = read_registry()
     gpus = nvidia_gpus() or amd_gpus() or apple_gpu()
@@ -331,10 +365,10 @@ def probe() -> dict:
             "kokoro": {"home": str(k_home), "launcher": which("kokoro-tts"), "torch": torch_info(k_home / "bin" / "python")},
             "breeze": {"python": str(b_python), "registered": bool(breg), "launcher": which("breeze-tts"),
                        "torch": torch_info(b_python) if breg else None, "weights": find_breeze_weights(reg)},
-            "localtts": localtts_health(),
+            "localtts": {"dir": find_localtts(), "health": localtts_health()},
         },
     }
-    plans = {"kokoro": plan_kokoro(sysinfo, reg), "breeze": plan_breeze(sysinfo, reg)}
+    plans = {"kokoro": plan_kokoro(sysinfo, reg), "breeze": plan_breeze(sysinfo, reg), "localtts": plan_localtts(sysinfo)}
     blockers = []
     if not sysinfo["tools"]["uv"]:
         blockers.append("uv is required: curl -LsSf https://astral.sh/uv/install.sh | sh")
@@ -357,17 +391,18 @@ def show(report: dict) -> None:
         out.append("  GPU: none usable found (CPU only)")
     out.append("  tools: " + ", ".join(f"{t} {'✔' if ok else '✖'}" for t, ok in s["tools"].items()))
     out.append(f"  free disk: {s['disk_free_gb']['venvs']} GB (venvs), {s['disk_free_gb']['data']} GB (models)")
-    lt = s["existing"]["localtts"]
-    out.append(f"  LocalTTS: {'running at ' + lt['url'] if lt else 'not running (optional app)'}")
+
     for name, p in report["plans"].items():
         out.append("")
         status = {"installed": "installed ✔", "install": "will install", "unsupported": "not supported here",
                   "blocked": "blocked"}[p["status"]]
-        out.append(f"{name.capitalize()}: {status}")
+        out.append(f"{ {'localtts': 'LocalTTS'}.get(name, name.capitalize()) }: {status}")
         if p.get("reason"):
             out.append(f"  reason: {p['reason']}")
         if p["status"] in ("install", "installed"):
-            if name == "kokoro":
+            if name == "localtts":
+                out.append(f"  {p['dir']}" + (f"  (from {p['repo']})" if p["status"] == "install" else ""))
+            elif name == "kokoro":
                 out.append(f"  backend {p['backend']}  →  {p['home']}")
             else:
                 out.append(f"  backend {p['backend']}, {p['dtype']}, fast stages: {', '.join(p['fast']) or 'off (eager)'}"

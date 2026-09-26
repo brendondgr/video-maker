@@ -21,11 +21,20 @@ in `index.html`, so both engines and Studio play the same sound. **Re-run `voice
 any narration, voice, duration or transition change.** Gate 1 warns when the mix is older than
 the storyboard.
 
-## Voices: three providers
+## Voices: providers
+
+**Default `provider: "auto"`:** LocalTTS when it is running (preferred: the model may already
+be loaded, and the GPU is shared with everything else that uses it), otherwise the local
+command the voice needs: `kokoro-tts` for a Kokoro voice name, `breeze-tts` for a saved voice
+or an `instruction`. The same model and seed give the same audio either way, and the clip
+cache is keyed by model, not transport, so switching between them does not re-synthesize.
+If neither is available, `voiceover.mjs` stops and says so: set up the engines with
+`bash tts/setup.sh --plan` (then install, with the user's agreement).
 
 | `provider` | What speaks | Use it when | Needs |
 |---|---|---|---|
-| `kokoro` (default) | Kokoro-82M stock voices | almost always: fast, clean, commercial use is fine | `kokoro-tts` |
+| `auto` (default) | LocalTTS if up, else the local engine for the voice | always, unless you need to force one | any of the below |
+| `kokoro` | Kokoro-82M stock voices | almost always: fast, clean, commercial use is fine | `kokoro-tts` |
 | `breeze` | Breeze TTS 2: **your own cloned voice**, a designed voice, or a directed delivery | the user asks for their voice, a specific character, or emotion/sounds | `breeze-tts`; **non-commercial only** |
 | `localtts` | either engine through a running LocalTTS server (local or a forwarded GPU box) | LocalTTS is already running, or the GPU is on another machine | the LocalTTS app |
 
@@ -52,8 +61,9 @@ as with Kokoro.
                "engine": "auto", "url": "http://localhost:5041" }                  // url: optional
 ```
 
-With `localtts`, word timings come from the server's `/v1/align` (Whisper); an older server
-without it gets estimated timings and a warning.
+Through LocalTTS, Kokoro clips come back with Kokoro's own word timings (`timings: true`)
+and Breeze clips are aligned in one `/v1/align` call (Whisper); an older server without
+those gets estimated timings and a warning.
 
 ## Settings (`storyboard.audio`)
 
@@ -61,7 +71,7 @@ without it gets estimated timings and a warning.
 "audio": {
   "voiceover": {
     "enabled": true,
-    "provider": "kokoro",    // kokoro (default) · breeze · localtts (see "Voices: three providers")
+    "provider": "auto",      // auto (default: LocalTTS if running, else local) · kokoro · breeze · localtts
     "voice": "am_michael",   // kokoro-tts --voices · af_heart (warm F), af_bella, am_michael (calm M), am_adam, bf_emma, bm_george (UK)
                              // breeze/localtts: a saved voice name, or omit and give "instruction"
     "speed": 1.0,            // 0.9–1.15 reads naturally

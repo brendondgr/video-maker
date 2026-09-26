@@ -82,7 +82,12 @@ def match(words: list[str], heard: list[tuple[str, float, float]], duration: flo
         else:
             i += 1
     out, last = [], 0.0
-    for w, (s, e) in zip(words, times):
+    for k, (w, (s, e)) in enumerate(zip(words, times)):
+        # Whisper stretches a word over neighbouring non-speech (a sigh before the first word,
+        # a pause after a word). Cap a word's length: trim the front of the first word, the tail of others.
+        cap = 0.35 + 0.1 * len(_norm(w))
+        if e - s > cap:
+            s, e = (e - cap, e) if k == 0 else (s, s + cap)
         s = max(s, last)
         e = max(e, s + 0.01)
         out.append({"w": w, "start": round(s, 3), "end": round(min(e, duration), 3)})

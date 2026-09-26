@@ -8,7 +8,7 @@
 
 Options:
   --plan / --json            show the plan (human / JSON) and stop
-  --engines kokoro,breeze    which engines to consider (default: both)
+  --engines kokoro,breeze,localtts   what to consider (default: all three; LocalTTS is the optional server app)
   --yes                      don't ask before installing
   --accept-breeze-license    accept the Breeze TTS 2 research / non-commercial licence
   --allow-cpu-breeze         install Breeze even without a supported GPU (very slow)
@@ -53,7 +53,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument("--plan", action="store_true")
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--engines", default="kokoro,breeze")
+    ap.add_argument("--engines", default="kokoro,breeze,localtts")
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--accept-breeze-license", action="store_true")
     ap.add_argument("--allow-cpu-breeze", action="store_true")
@@ -99,6 +99,10 @@ def main() -> int:
                 if not ask("Accept that licence and install Breeze?", False):
                     print("» skipping Breeze")
                     continue
+        if name == "localtts" and not a.yes and not ask(
+                "Install LocalTTS too (an always-on TTS server + web UI that video-maker prefers when running)?", True):
+            print("» skipping LocalTTS")
+            continue
         todo.append((name, p))
 
     adopt_existing(report)
@@ -110,7 +114,16 @@ def main() -> int:
         return 1
 
     for name, p in todo:
-        if name == "kokoro":
+        if name == "localtts":
+            d = Path(p["dir"])
+            if not (d / "install.sh").is_file():
+                print(f"\n━━ fetching LocalTTS ━━\n$ git clone {p['repo']} {d}")
+                d.parent.mkdir(parents=True, exist_ok=True)
+                if subprocess.call(["git", "clone", "--quiet", p["repo"], str(d)]) != 0:
+                    print("✖ could not clone LocalTTS")
+                    return 1
+            cmd = ["bash", str(d / "install.sh"), "--no-engines"]   # engines are handled above
+        elif name == "kokoro":
             cmd = ["bash", str(HERE / "install.sh"), *p["install_args"]] + (["--force-torch"] if a.reinstall else [])
         else:
             fast = a.breeze_fast if a.breeze_fast is not None else ",".join(p["fast"])
@@ -128,7 +141,8 @@ def main() -> int:
     print("\nInstalled. Engines recorded in", registry.REGISTRY)
     for n, e in registry.load().get("engines", {}).items():
         print(f"  {n:7s} {e.get('backend', '?'):5s} torch {e.get('torch', '?')}  → {e.get('launcher') or e.get('python')}")
-    print("\nOptional: LocalTTS runs these engines as an always-on API + web UI with idle GPU unloading.")
+    if not any(n == "localtts" for n, _ in todo) and report["plans"]["localtts"]["status"] == "install":
+        print("\nOptional: LocalTTS runs these engines as an always-on API + web UI (bash tts/setup.sh --engines localtts).")
     return 0
 
 

@@ -50,7 +50,7 @@ Two local engines, set up by one planner:
 ```bash
 bash tts/setup.sh --plan     # look at this machine and explain what it would do; changes nothing
 bash tts/setup.sh            # the same, then ask, then install (Breeze asks you to accept its licence)
-bash tts/setup.sh --engines kokoro          # only Kokoro
+bash tts/setup.sh --engines kokoro          # only Kokoro (also: breeze, localtts)
 bash tts/setup.sh --yes --accept-breeze-license   # unattended
 python3 tts/probe.py --json  # the plan as JSON
 ```
@@ -91,9 +91,14 @@ What gets installed where:
 Each installer smoke-tests the engine before recording it, so a broken install is never
 registered. Re-running continues where it stopped.
 
-**LocalTTS (optional, separate app).** An always-on API + web UI for the same engines, with the
-GPU freed after 10 idle minutes; it can also run on a remote GPU box behind `ssh -L`. The skill
-uses it with `audio.voiceover.provider: "localtts"` (see `voiceover.md`).
+**LocalTTS (optional, separate app; the planner's third item).** An always-on API + web UI for
+the same engines (github.com/brendondgr/LocalTTS), with the GPU freed after 10 idle minutes; it
+can also run on a remote GPU box behind `ssh -L`. The planner finds an existing install (via
+the `localtts` command, `~/Projects/LocalTTS` or `~/.local/share/tts-engines/LocalTTS`), or
+clones it there and runs its installer (a systemd user service on Linux, a LaunchAgent on
+macOS, a background process elsewhere). It uses the engines recorded in the registry and adds
+its voices folder, so voices saved in its web UI work with `breeze-tts` too. The skill's
+default `provider: "auto"` prefers it whenever it is running (see `voiceover.md`).
 
 ## 3 · Kokoro details (`kokoro-tts`)
 
