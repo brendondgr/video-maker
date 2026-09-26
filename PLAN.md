@@ -41,6 +41,9 @@ mirrors it. `[x]` = done and committed, `[~]` = in progress, `[ ]` = not started
 
 ## Phases
 
+### Resolution policy
+Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, never resolution.
+
 ### Phase 0 — Local narration engine
 - [x] `tts/kokoro_tts.py`: CLI (line, file, batch job, `--check`) → 24 kHz WAV + word-timing JSON
 - [x] `tts/install.sh`: one environment at `~/venvs/kokoro`, backend auto-detect (ROCm per gfx
@@ -63,13 +66,14 @@ mirrors it. `[x]` = done and committed, `[~]` = in progress, `[ ]` = not started
       the default and our scrubber mounts only with `?preview`, so HF render/Studio get clean frames
 
 ### Phase 2 — HyperFrames knowledge in the skill
-- [ ] Vendor the 10 skills (`hyperframes`, `-core`, `-cli`, `-studio`, `-keyframes`,
+- [x] Vendor the 10 skills (`hyperframes`, `-core`, `-cli`, `-studio`, `-keyframes`,
       `-animation`, `-creative`, `-registry`, `-audio`, `media-use`) under
       `vendor/hyperframes/skills/` with LICENSE + NOTICE; `scripts/sync-hyperframes.mjs` to
-      update the pin
+      update the pin (vendored from tag v0.8.77, unmodified)
+- [x] `references/hyperframes.md`: bridge commands, modes, translation table, routing table
 - [ ] `SKILL.md` routing table: when to read which vendored reference, and what does *not* apply
       (their `data-start` clip model, CSS/WAAPI adapters) inside `VM.scene` builders
-- [ ] Two authoring modes documented: **scenes** (default; storyboard + builders) and **native
+- [x] Two authoring modes documented: **scenes** (default; storyboard + builders) and **native
       HyperFrames** (for footage-heavy edits, registry blocks, Studio-first editing) sharing the
       same audio, QA and render steps
 
