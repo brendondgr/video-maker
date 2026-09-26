@@ -253,12 +253,13 @@
       tl.set({}, {}, dur);
       master.add(tl, at);
 
+      sEl.style.zIndex = String(i + 1);
       var tFn = TRANSITIONS[tr.type || 'cut'];
       if (!tFn) { warnings.push('unknown transition "' + tr.type + '" on scene "' + spec.id + '"; using cut'); tFn = TRANSITIONS.cut; }
-      if (i > 0 && trDur > 0) tFn(master, sEl, at, trDur, tr.ease);
+      // (master, incoming, start, duration, ease, outgoing, transition spec)
+      if (i > 0 && trDur > 0) tFn(master, sEl, at, trDur, tr.ease, sceneRecords[i - 1].el, tr);
 
       sceneRecords.push({ id: spec.id, start: at, end: at + dur, duration: dur, el: sEl, frameFns: frameFns, zIndex: i });
-      sEl.style.zIndex = String(i + 1);
       cursor = at + dur;
     }
 

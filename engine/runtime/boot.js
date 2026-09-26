@@ -21,12 +21,14 @@
     'node_modules/katex/dist/katex.min.js',
     'node_modules/roughjs/bundled/rough.js',
     'runtime/vm.js',
+    'runtime/transitions.js',
     'runtime/preview.js',
     'runtime/helpers/motion.js',
     'runtime/helpers/text.js',
     'runtime/helpers/data.js',
     'runtime/helpers/science.js',
     'runtime/helpers/three.js',
+    'runtime/helpers/figures.js',
     'runtime/helpers/captions.js'
   ].map(function (p) { return E + p; });
 

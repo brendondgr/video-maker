@@ -95,12 +95,13 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
 - [x] Gates: narration never cut by a scene end; audio/video duration match; loudness in range
 
 ### Phase 4 — Motion and design
-- [ ] Transitions: `blur-crossfade`, `squeeze`, `diamond-iris`, `diagonal-split`,
-      `staggered-blocks`, `grid-dissolve`, `focus-pull`, `color-dip`, `whip-pan` + HF presets
-- [ ] Helpers: `VMX.camera` (viewport/target zoom), `pathDraw`, `ring`/`progress`, `marker`,
-      `keywordGlow` (word-timed), `hubSpokes`, `typeSeq`
-- [ ] `frame.md` design spec → `storyboard.style`; ship the explainer-suited presets
-      (blue-professional, cobalt-grid, cartesian, editorial-forest) and the 9 palettes
+- [x] Transitions: `crossfade`, `blur-crossfade`, `zoom-through`, `push` (4 directions), `squeeze`,
+      `diamond-iris`, `diagonal-split`, `focus-pull`, `color-dip`, `whip-pan`, `staggered-blocks`,
+      `grid-dissolve` (runtime/transitions.js; transitions now receive the outgoing scene too)
+- [x] Helpers (helpers/figures.js): `hubSpokes`, `cycle`, `camera`, `ring`, `pulse` (word-cue
+      emphasis). `pathDraw`/`marker`/`typeSeq` already covered by `draw`/`highlight`/`swap`
+- [x] `design.mjs`: any HF frame preset (13 vendored) or frame.md → `storyboard.style` palette +
+      fonts (web fonts downloaded once into assets/fonts), `--f-display` token for headings
 - [ ] Fold HF typography minimums, data-in-motion "no" list, transition-count rule and beat
       direction vocabulary into `references/motion-design.md`; blueprints mapped to our
       visual catalog
