@@ -50,7 +50,7 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
       family / CUDA / XPU / MPS / CPU), guard against kokoro replacing the GPU torch, global
       `kokoro-tts` launcher that re-executes on the host from toolbox/distrobox
 - [x] Verified on Strix Halo (gfx1151, ROCm 7.13 nightly): RTF ≈ 0.28
-- [ ] `tts/install.ps1` for Windows (CUDA / ROCm gfx1151 wheels / CPU)
+- [x] `tts/install.ps1` for Windows (CUDA / ROCm TheRock wheels / CPU) — written, not yet run on Windows
 
 ### Phase 1 — HyperFrames interop (every project is both)
 - [x] Runtime: drive scene visibility + `onFrame` from a master `onUpdate` so any external seek
@@ -112,10 +112,10 @@ Renders are 1080p (canvas size) or 4K (`--4k`); drafts lower encode quality, nev
 - [ ] (later) Generate HF `*.motion.json` assertions from beats (`appearsBy`) for `check`
 
 ### Phase 6 — Install everywhere
-- [ ] `references/install.md`: Linux / macOS / Windows × AMD ROCm / NVIDIA CUDA / Intel XPU /
+- [x] `references/install.md`: Linux / macOS / Windows × AMD ROCm / NVIDIA CUDA / Intel XPU /
       Apple MPS / CPU for kokoro-tts, Node/FFmpeg/Chromium for the engine, HyperFrames extras
       (whisper.cpp, Docker)
-- [ ] `doctor.mjs` reports TTS + HyperFrames status
+- [x] `doctor.mjs` reports TTS + HyperFrames status (`--tts` runs a timed synthesis)
 
 ### Phase 7 — Deliverables: Co-Scientist (Nature 2026, doi:10.1038/s41586-026-10644-y)
 - [ ] 30 s — one message: a multi-agent AI that generates, debates and evolves hypotheses, and

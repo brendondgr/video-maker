@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 // Check that everything the engine needs is installed, and say how to fix what is not.
+//   node doctor.mjs [--tts]     --tts also runs `kokoro-tts --check` (loads the model, times a sentence)
+// ✖ = required and missing · ▲ = optional feature unavailable (HyperFrames engine, narration)
 import fs from 'node:fs';
 import path from 'node:path';
-import { ENGINE_DIR, which, launchBrowser, parseArgs } from './lib/common.mjs';
+import { spawnSync } from 'node:child_process';
+import { ENGINE_DIR, SKILL_DIR, which, launchBrowser, parseArgs } from './lib/common.mjs';
+import { HF_BIN, HF_VERSION } from './lib/hf.mjs';
 const args = parseArgs();
 let ok = true;
 const line = (good, what, fix) => { console.log(`${good ? '✔' : '✖'} ${what}${!good && fix ? `\n    fix: ${fix}` : ''}`); if (!good) ok = false; };
@@ -21,6 +25,22 @@ try {
   await b.close();
 } catch (e) {
   line(false, 'chromium launches', `cd ${ENGINE_DIR} && npx playwright install chromium   (or pass --chrome /path/to/chrome, or set VM_CHROME)\n    ${e.message.split('\n')[0]}`);
+}
+
+// Optional: HyperFrames engine (render --engine hf, hf.mjs, QA gate 3b) and narration.
+const opt = (good, what, fix) => console.log(`${good ? '✔' : '▲'} ${what}${!good && fix ? `\n    to enable: ${fix}` : ''}`);
+opt(major >= 22, `node ${process.versions.node} for HyperFrames (needs ≥ 22)`, 'install Node 22+ (nvm install 22 / dnf install nodejs22 / brew install node@22)');
+opt(fs.existsSync(HF_BIN), `hyperframes@${HF_VERSION} CLI (render --engine hf, hf.mjs, QA gate 3b)`, `cd ${ENGINE_DIR} && npm install`);
+opt(fs.existsSync(path.join(SKILL_DIR, 'vendor', 'hyperframes', 'skills', 'hyperframes-core', 'SKILL.md')), 'vendored HyperFrames skills (references)', `node ${path.join(ENGINE_DIR, 'scripts', 'sync-hyperframes.mjs')}`);
+const tts = process.env.VM_TTS || 'kokoro-tts';
+const hasTTS = !!(await which(tts));
+opt(hasTTS, `${tts} on PATH (narration via voiceover.mjs)`, `bash ${path.join(SKILL_DIR, 'tts', 'install.sh')}   (Windows: tts\\install.ps1) — see references/install.md`);
+opt(!!(await which('espeak-ng')), 'espeak-ng (Kokoro fallback for unknown words)', 'dnf/apt/pacman install espeak-ng · brew install espeak-ng · winget install eSpeak-NG.eSpeak-NG');
+if (args.tts && hasTTS) {
+  console.log('  running kokoro-tts --check …');
+  const r = spawnSync(tts, ['--check'], { encoding: 'utf8', shell: process.platform === 'win32' });
+  console.log((r.stderr || '').split('\n').filter((l) => /torch|RTF|device/.test(l)).map((l) => '    ' + l).join('\n'));
+  opt(r.status === 0, 'kokoro-tts synthesizes', 'see the output above and references/install.md § troubleshooting');
 }
 console.log(ok ? '\nAll good.' : '\nFix the ✖ items above.');
 process.exit(ok ? 0 : 1);
