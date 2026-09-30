@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, ENGINE_DIR, fmtTime, isMain } from './lib/common.mjs';
 import { parseHex, contrastReport } from './lib/color.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 export async function validateStoryboard(dir, { planOnly = false } = {}) {
   const F = [];
@@ -123,7 +124,8 @@ export async function validateStoryboard(dir, { planOnly = false } = {}) {
 
   // Voice-over: once narration is synthesized (voiceover.mjs), every scene must be long enough
   // for its clip, and the mix must be newer than the last storyboard edit.
-  const timingFile = path.join(dir, 'audio', 'timing.json');
+  const P = projectPaths(dir, sb);
+  const timingFile = P.timing;
   if (vo && fs.existsSync(timingFile)) {
     const { requiredDuration } = await import('./lib/audio.mjs');
     const timing = await readJSON(timingFile);
@@ -134,8 +136,8 @@ export async function validateStoryboard(dir, { planOnly = false } = {}) {
         add('error', 'NARRATION_CUT', `scene is ${s.duration}s but its ${c.duration.toFixed(2)}s narration needs ${requiredDuration(sb, i, c.duration).toFixed(2)}s — re-run voiceover.mjs (retime)`, { scene: s.id });
       }
     });
-    const mix = path.join(dir, 'audio', 'mix.wav');
-    if (!fs.existsSync(mix)) add('warn', 'MIX', 'audio/mix.wav missing — run voiceover.mjs');
+    const mix = P.mix;
+    if (!fs.existsSync(mix)) add('warn', 'MIX', `${P.rel.mix} missing — run voiceover.mjs`);
     else if (fs.statSync(mix).mtimeMs + 1000 < fs.statSync(path.join(dir, 'storyboard.json')).mtimeMs) add('warn', 'MIX', 'storyboard.json changed after the last mix — re-run voiceover.mjs');
   } else if (vo && !planOnly) add('warn', 'VOICE_STALE', 'voice-over enabled but not synthesized yet — run voiceover.mjs');
 
@@ -162,7 +164,7 @@ if (isMain(import.meta.url)) {
   const args = parseArgs();
   const dir = projectDir(args);
   const res = await validateStoryboard(dir, { planOnly: !!args['plan-only'] });
-  await writeJSON(path.join(dir, 'qa', 'storyboard.json'), res);
+  await writeJSON(path.join(projectPaths(dir).qa, 'storyboard.json'), res);
   if (args.json) console.log(JSON.stringify(res, null, 2));
   const n = printFindings('Gate 1 · storyboard', res.findings);
   process.exit(n.error ? 1 : 0);

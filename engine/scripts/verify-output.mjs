@@ -5,6 +5,7 @@
 //   node verify-output.mjs <project> <video> [--expect-height 2160] [--freeze 4] [--partial] [--json]
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, run, isMain, fmtTime } from './lib/common.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 export async function verifyOutput(dir, video, opts = {}) {
   const F = [];
@@ -71,7 +72,7 @@ if (isMain(import.meta.url)) {
   const video = path.resolve(args._[1] || '');
   if (!args._[1]) { console.error('usage: verify-output.mjs <project> <video>'); process.exit(2); }
   const res = await verifyOutput(dir, video, args);
-  await writeJSON(path.join(dir, 'qa', 'output.json'), res);
+  await writeJSON(path.join(projectPaths(dir).qa, 'output.json'), res);
   if (args.json) console.log(JSON.stringify(res, null, 2));
   const n = printFindings('Gate 5 · output', res.findings);
   process.exit(n.error ? 1 : 0);

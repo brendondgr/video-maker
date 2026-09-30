@@ -10,6 +10,7 @@
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, serve, launchBrowser, openComposition, isMain, diffImages } from './lib/common.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 export async function check(dir, opts = {}) {
   const F = [];
@@ -247,7 +248,7 @@ if (isMain(import.meta.url)) {
   const args = parseArgs();
   const dir = projectDir(args);
   const res = await check(dir, { samples: args.samples, determinism: !args['no-determinism'], chrome: args.chrome });
-  await writeJSON(path.join(dir, 'qa', 'check.json'), res);
+  await writeJSON(path.join(projectPaths(dir).qa, 'check.json'), res);
   if (args.json) console.log(JSON.stringify(res, null, 2));
   const n = printFindings('Gate 3 · runtime check', res.findings);
   process.exit(n.error ? 1 : 0);

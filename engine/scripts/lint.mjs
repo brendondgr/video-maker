@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, isMain } from './lib/common.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 const RULES = [
   { re: /\bMath\.random\s*\(/, level: 'error', code: 'RANDOM', msg: 'Math.random — use ctx.random() (seeded per scene)' },
@@ -83,7 +84,7 @@ if (isMain(import.meta.url)) {
   const args = parseArgs();
   const dir = projectDir(args);
   const res = await lint(dir);
-  await writeJSON(path.join(dir, 'qa', 'lint.json'), res);
+  await writeJSON(path.join(projectPaths(dir).qa, 'lint.json'), res);
   if (args.json) console.log(JSON.stringify(res, null, 2));
   const n = printFindings('Gate 2 · lint', res.findings);
   process.exit(n.error ? 1 : 0);

@@ -15,6 +15,7 @@ import { check } from './check.mjs';
 import { snapshot } from './snapshot.mjs';
 import { runHF, sceneTimes, HF_BIN } from './lib/hf.mjs';
 import fs from 'node:fs';
+import { projectPaths } from './lib/paths.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
@@ -86,8 +87,9 @@ for (const g of report.gates) {
   md.push('');
 }
 md.push(failed ? '**Result: FAIL** — fix errors, then re-run qa.' : '**Result: PASS (automated gates)** — now do the visual review, then render a draft.');
-await fsp.mkdir(path.join(dir, 'qa'), { recursive: true });
-await fsp.writeFile(path.join(dir, 'qa', 'report.md'), md.join('\n') + '\n');
-await writeJSON(path.join(dir, 'qa', 'report.json'), report);
-console.log(`\n${failed ? '✖ QA FAILED' : '✔ QA passed (automated)'} — qa/report.md`);
+const P = projectPaths(dir);
+await fsp.mkdir(P.qa, { recursive: true });
+await fsp.writeFile(path.join(P.qa, 'report.md'), md.join('\n') + '\n');
+await writeJSON(path.join(P.qa, 'report.json'), report);
+console.log(`\n${failed ? '✖ QA FAILED' : '✔ QA passed (automated)'} — ${P.rel.qa}/report.md`);
 process.exit(failed ? 1 : 0);

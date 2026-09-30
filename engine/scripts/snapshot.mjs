@@ -10,11 +10,12 @@
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON, serve, launchBrowser, openComposition, isMain, fmtTime } from './lib/common.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 export async function snapshot(dir, opts = {}) {
   const sb = await readJSON(path.join(dir, 'storyboard.json'));
   const canvas = Object.assign({ width: 1920, height: 1080 }, sb.canvas);
-  const outDir = path.resolve(dir, opts.out || 'qa');
+  const outDir = opts.out ? path.resolve(dir, opts.out) : projectPaths(dir, sb).qa;
   const framesDir = path.join(outDir, 'frames');
   await fsp.rm(framesDir, { recursive: true, force: true });
   await fsp.mkdir(framesDir, { recursive: true });
@@ -86,7 +87,7 @@ if (isMain(import.meta.url)) {
   const args = parseArgs();
   const dir = projectDir(args);
   const res = await snapshot(dir, args);
-  console.log(`\nGate 4 · snapshots: ${res.shots.length} stills in ${path.relative(process.cwd(), path.join(dir, args.out || 'qa', 'frames'))}`);
+  console.log(`\nGate 4 · snapshots: ${res.shots.length} stills in ${path.relative(process.cwd(), path.join(args.out ? path.resolve(dir, args.out) : projectPaths(dir).qa, 'frames'))}`);
   res.sheets.forEach((s) => console.log('  contact sheet → ' + path.relative(process.cwd(), s)));
   console.log('  Now LOOK at every sheet and score it against references/validation.md (visual rubric).');
 }

@@ -23,6 +23,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
 import { parseArgs, projectDir, readJSON, writeJSON, SKILL_DIR, launchBrowser, which } from './lib/common.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
@@ -30,7 +31,8 @@ const sb = await readJSON(path.join(dir, 'storyboard.json'));
 const cfg = sb.images || {};
 const items = (cfg.items || []).filter((it) => !args.only || String(args.only).split(',').includes(it.name));
 const canvas = Object.assign({ width: 1920, height: 1080 }, sb.canvas);
-const imgDir = path.join(dir, 'assets', 'img');
+const P = projectPaths(dir, sb);
+const imgDir = P.img;
 const specDir = path.join(imgDir, 'specs');
 const lockPath = path.join(imgDir, 'images.lock.json');
 const DISPATCH = path.join(SKILL_DIR, 'imagegen', 'scripts', 'imagegen.sh');
@@ -150,8 +152,8 @@ if (shown.length) {
   const browser = await launchBrowser(args);
   const page = await browser.newPage({ viewport: { width: 1800, height: 200 } });
   await page.setContent(html, { waitUntil: 'load' });
-  await fsp.mkdir(path.join(dir, 'qa'), { recursive: true });
-  const sheet = path.join(dir, 'qa', 'images-contact-sheet.png');
+  await fsp.mkdir(P.qa, { recursive: true });
+  const sheet = path.join(P.qa, 'images-contact-sheet.png');
   await page.screenshot({ path: sheet, fullPage: true });
   await browser.close();
   console.log(`\n✔ review sheet → ${path.relative(process.cwd(), sheet)}\n  Now LOOK at it: right subject, nothing important outside the red frame, no stray text or artefacts.`);

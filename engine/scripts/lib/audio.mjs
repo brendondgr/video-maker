@@ -228,7 +228,7 @@ async function measureLoudness(file, I, TP) {
  * Build audio/mix.wav: narration + optional music bed (sidechain-ducked under the voice, per
  * HF media-use/references/operations.md) + SFX cues, then two-pass loudnorm to the target.
  */
-export async function buildMix({ dir, sb, voiceFile, music, sfx, out }) {
+export async function buildMix({ dir, sb, voiceFile, music, sfx, out, premix }) {
   const T = timelineTotal(sb);
   const vo = voSettings(sb);
   const inputs = [], chains = [], mixIn = [];
@@ -256,7 +256,9 @@ export async function buildMix({ dir, sb, voiceFile, music, sfx, out }) {
   }
   if (!mixIn.length) throw new Error('nothing to mix (no narration, music or sfx)');
   const graph = [...chains, `${mixIn.join('')}amix=inputs=${mixIn.length}:duration=longest:normalize=0,apad,atrim=0:${T}[mix]`].join(';');
-  const pre = path.join(dir, 'audio', '.premix.wav');
+  const pre = premix || path.join(path.dirname(out), '.premix.wav');
+  await fsp.mkdir(path.dirname(pre), { recursive: true });
+  await fsp.mkdir(path.dirname(out), { recursive: true });
   await run('ffmpeg', ['-y', '-v', 'error', ...inputs, '-filter_complex', graph, '-map', '[mix]', '-c:a', 'pcm_s16le', '-ar', '48000', pre]);
   const I = vo.loudness, TP = vo.true_peak;
   const m = await measureLoudness(pre, I, TP);

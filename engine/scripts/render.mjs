@@ -18,6 +18,7 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, projectDir, readJSON, serve, launchBrowser, openComposition, which, run, fmtTime } from './lib/common.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 const QUALITY = {
   draft:    { img: 'jpeg', q: 80,  crf: 28, preset: 'veryfast' },
@@ -41,7 +42,8 @@ async function main() {
   const codec = args.codec || 'h264';
   // The mastered mix from voiceover.mjs is used automatically (vm engine muxes it; the hf engine
   // plays it from the page's <audio id="vm-mix">). --audio overrides, --no-audio renders silent.
-  const mixFile = path.join(dir, 'audio', 'mix.wav');
+  const P = projectPaths(dir, sb);
+  const mixFile = P.mix;
   if (args['no-audio']) delete args.audio;
   else if (!args.audio && (args.engine || 'vm') === 'vm' && fs.existsSync(mixFile)) args.audio = mixFile;
   if ((args.engine || 'vm') === 'hf') return renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format });
@@ -77,7 +79,7 @@ async function main() {
     const slug = (sb.meta?.slug || sb.meta?.title || path.basename(dir)).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video';
     const suffix = args.scene ? `-${args.scene}` : (args.from != null || args.to != null) ? `-${t0.toFixed(1)}-${t1.toFixed(1)}` : '';
     const ext = format === 'png' ? '' : '.' + format;
-    const out = path.resolve(args.out || path.join(dir, 'out', `${slug}${suffix}-${outW}x${outH}-${fps}fps${args.quality === 'draft' ? '-draft' : ''}${ext}`));
+    const out = path.resolve(args.out || path.join(suffix || args.quality === 'draft' ? P.previews : P.exports, `${slug}${suffix}-${outW}x${outH}-${fps}fps${args.quality === 'draft' ? '-draft' : ''}${ext}`));
     await fsp.mkdir(path.dirname(out), { recursive: true });
 
     const workers = Math.max(1, Math.min(+(args.workers || Math.min(4, Math.max(1, Math.floor(os.cpus().length / 2)))), Math.ceil(total / 15)));
@@ -185,7 +187,7 @@ async function renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format
   const slug = (sb.meta?.slug || path.basename(dir)).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video';
   const ext = { mp4: '.mp4', webm: '.webm', mov: '.mov', gif: '.gif', png: '' }[format];
   if (ext == null) throw new Error('--format for --engine hf: mp4, webm, mov, gif or png');
-  const out = path.resolve(args.out || path.join(dir, 'out', `${slug}-${outW}x${outH}-${fps}fps-hf${args.quality === 'draft' ? '-draft' : ''}${ext}`));
+  const out = path.resolve(args.out || path.join(args.quality === 'draft' ? projectPaths(dir, sb).previews : projectPaths(dir, sb).exports, `${slug}-${outW}x${outH}-${fps}fps-hf${args.quality === 'draft' ? '-draft' : ''}${ext}`));
   await fsp.mkdir(path.dirname(out), { recursive: true });
   // HyperFrames renders at the composition size or 4K (landscape-4k / portrait-4k / square-4k).
   const hf4k = scale === 2;
@@ -221,7 +223,7 @@ async function deliver(out, dir, sb, dest) {
   const base = path.basename(out).replace(/\.[^.]+$/, '');
   const copies = [[out, path.join(target, path.basename(out))]];
   for (const ext of ['srt', 'vtt']) {
-    const f = path.join(dir, 'audio', `captions.${ext}`);
+    const f = projectPaths(dir, sb).captions[ext];
     if (fs.existsSync(f)) copies.push([f, path.join(target, `${base}.${ext}`)]);
   }
   for (const [a, b] of copies) if (path.resolve(a) !== b) await fsp.copyFile(a, b);

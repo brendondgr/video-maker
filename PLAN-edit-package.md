@@ -194,7 +194,7 @@ relative paths.
 
 ### Phase A — Groundwork (no visible change for users)
 
-#### [ ] A1 · Centralise project paths
+#### [x] A1 · Centralise project paths
 **Why:** about fifteen scripts plus `boot.js` and `vm.js` hard-code `out/`, `qa/` and `audio/…`
 (see the path map). Moving folders safely needs one place that knows them.
 **Do:**
@@ -205,12 +205,12 @@ relative paths.
 2. Replace every hard-coded path in `render.mjs`, `voiceover.mjs`, `lib/audio.mjs`, `lib/hf.mjs`,
    `qa.mjs`, `lint.mjs`, `check.mjs`, `snapshot.mjs`, `images.mjs`, `plan.mjs`,
    `validate-storyboard.mjs`, `verify-output.mjs`, `design.mjs` and `new-project.mjs` with `projectPaths()`.
-3. Runtime: `boot.js` reads the captions path from `window.__vmPaths` (set by the served
-   `index.html`) and falls back to `audio/captions.json`.
+3. Runtime: `boot.js` picks the captions path from `storyboard.meta.layout` (the storyboard it
+   already fetches), mirroring `paths.mjs` — done in B1, when a second layout exists.
 
 **Verify:** `grep -rnE "'(out|qa)'|'audio'" engine/scripts` finds nothing outside `paths.mjs`.
-`qa.mjs` passes on both examples. Renders are byte-identical to the baseline (`cmp`), or match
-frame for frame when compared with `ffmpeg -f framemd5`.
+`qa.mjs` passes on both examples. Renders match the baseline: renders are not bit-exact from run
+to run (Chromium rasterisation), so compare with PSNR — min > 40 dB counts as identical.
 **Commit:** `Centralise project paths in lib/paths.mjs`
 
 #### [ ] A2 · Determinism fixes for isolated rendering

@@ -11,13 +11,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON } from './lib/common.mjs';
 import { timelineTotal, sceneTimes } from './lib/hf.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
 const sb = await readJSON(path.join(dir, 'storyboard.json'));
 const wps = +(args.wps || 2.4);
 const vo = sb.audio?.voiceover || {};
-const voiced = !!vo.enabled && fs.existsSync(path.join(dir, 'audio', 'timing.json')) && sb.scenes.every((s) => s.silent);
+const P = projectPaths(dir, sb);
+const voiced = !!vo.enabled && fs.existsSync(P.timing) && sb.scenes.every((s) => s.silent);
 
 const words = (t) => (t || '').trim().split(/\s+/).filter(Boolean).length;
 const fmt = (t) => { const m = Math.floor(t / 60), s = t - m * 60; return `${m}:${s.toFixed(1).padStart(4, '0')}`; };
@@ -105,15 +107,16 @@ chapters.forEach((c) => {
 });
 
 md += `\n## Production steps\n\n` + [
-  'Brief and evidence bank (`brief.md`): every on-screen number traced to a source.',
-  `Illustrations: \`images.mjs\` (${imgs.length} image(s)); review \`qa/images-contact-sheet.png\`.`,
+  `Brief and evidence bank (\`${P.rel.brief}\`): every on-screen number traced to a source.`,
+  `Illustrations: \`images.mjs\` (${imgs.length} image(s)); review \`${P.rel.qa}/images-contact-sheet.png\`.`,
   'Storyboard (this plan): `validate-storyboard.mjs --plan-only`, then show this plan to the user.',
   'Voice (`voiceover.mjs`): synthesize, fit scenes to the words, cue beats, captions, mix. Then re-run `plan.mjs` for final timings.',
   'Scenes (`scenes/<id>.js`): scene kit + helpers, every time taken from `ctx.at(beat)`. For long videos, build chapters in parallel (`references/long-form.md`).',
   'QA (`qa.mjs`): look at every contact sheet against `validation.md` and `visual-playbook.md` § 8.',
   'Render (`render.mjs`) and verify (`verify-output.mjs`), then spot-check frames, then deliver.'
 ].map((x, i) => `${i + 1}. ${x}`).join('\n') + '\n';
-fs.writeFileSync(path.join(dir, 'PLAN.md'), md);
+fs.mkdirSync(P.docs, { recursive: true });
+fs.writeFileSync(P.plan, md);
 
 let sc = `# ${sb.meta?.title || path.basename(dir)}: narration script\n\n`;
 sc += `*${totalWords} words · ${voiced ? 'final' : 'estimated'} runtime ${fmt(total)}${vo.enabled ? ` · voice ${vo.voice} @ ${vo.speed || 1}×` : ''}. Brackets describe what is on screen when the line is spoken.*\n`;
@@ -125,5 +128,5 @@ chapters.forEach((c) => {
     sc += `**${fmt(r.start)}** · *[${cue}]*  \n${r.s.narration}\n\n`;
   });
 });
-fs.writeFileSync(path.join(dir, 'SCRIPT.md'), sc);
-console.log(`✔ PLAN.md + SCRIPT.md · ${sb.scenes.length} scenes · ${totalWords} words · ${voiced ? 'actual' : 'est.'} ${fmt(total)}`);
+fs.writeFileSync(P.script, sc);
+console.log(`✔ ${P.rel.plan} + ${P.rel.script} · ${sb.scenes.length} scenes · ${totalWords} words · ${voiced ? 'actual' : 'est.'} ${fmt(total)}`);

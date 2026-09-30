@@ -23,6 +23,7 @@ import { parseArgs, projectDir, readJSON, writeJSON, printFindings, fmtTime } fr
 import { syncProject, timelineTotal, sceneTimes } from './lib/hf.mjs';
 import { voSettings, retime, readWav, writeWav, narrationLead, captionGroups, toSRT, toVTT, sfxCues, buildMix, requiredDuration } from './lib/audio.mjs';
 import { synthesize, voiceKey, voiceLabel, engineFor } from './lib/tts.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
@@ -35,7 +36,7 @@ if (args.speed) sb.audio.voiceover.speed = +args.speed;
 if (args.provider) sb.audio.voiceover.provider = args.provider;
 if (args.instruction) sb.audio.voiceover.instruction = args.instruction;
 const vo = voSettings(sb);
-const audioDir = path.join(dir, 'audio'), clipDir = path.join(audioDir, 'vo');
+const P = projectPaths(dir, sb), clipDir = P.voiceCache;
 await fsp.mkdir(clipDir, { recursive: true });
 const findings = [];
 
@@ -99,25 +100,25 @@ if (narrated.length) {
     const at = Math.round((times[i].start + narrationLead(sb, i, vo)) * rate);
     for (let k = 0; k < w.samples.length && at + k < buf.length; k++) buf[at + k] += w.samples[k];
   }
-  voiceFile = path.join(audioDir, 'voiceover.wav');
+  voiceFile = P.voiceWav;
   writeWav(voiceFile, buf, rate);
 }
-await writeJSON(path.join(audioDir, 'timing.json'), timing);
+await writeJSON(P.timing, timing);
 
 if (sb.audio.captions?.enabled && narrated.length) {
   const groups = captionGroups(sb, timing);
-  await writeJSON(path.join(audioDir, 'captions.json'), { groups });
-  await fsp.writeFile(path.join(audioDir, 'captions.srt'), toSRT(groups));
-  await fsp.writeFile(path.join(audioDir, 'captions.vtt'), toVTT(groups));
-  console.log(`▶ captions: ${groups.length} cards → audio/captions.{json,srt,vtt}`);
+  await writeJSON(P.captions.json, { groups });
+  await fsp.writeFile(P.captions.srt, toSRT(groups));
+  await fsp.writeFile(P.captions.vtt, toVTT(groups));
+  console.log(`▶ captions: ${groups.length} cards → ${P.rel.captionsDir}/captions.{json,srt,vtt}`);
 }
 
 // ---------------------------------------------------------------- 4. mix
 const { cues, problems } = sfxCues(sb, dir);
 for (const p of problems) findings.push({ level: 'error', code: 'SFX', msg: p });
-const m = await buildMix({ dir, sb, voiceFile, music: sb.audio.music, sfx: cues, out: path.join(audioDir, 'mix.wav') });
+const m = await buildMix({ dir, sb, voiceFile, music: sb.audio.music, sfx: cues, out: P.mix, premix: P.premix });
 syncProject(dir);
-console.log(`▶ mix: ${m.tracks} track(s), ${cues.length} sfx cue(s), ${fmtTime(m.duration)} → audio/mix.wav (${m.lufs.toFixed(1)} LUFS, TP ${m.true_peak.toFixed(1)} dBTP)`);
+console.log(`▶ mix: ${m.tracks} track(s), ${cues.length} sfx cue(s), ${fmtTime(m.duration)} → ${P.rel.mix} (${m.lufs.toFixed(1)} LUFS, TP ${m.true_peak.toFixed(1)} dBTP)`);
 if (Math.abs(m.lufs - vo.loudness) > 1.5) findings.push({ level: 'warn', code: 'LOUDNESS', msg: `integrated ${m.lufs.toFixed(1)} LUFS vs target ${vo.loudness}` });
 if (m.true_peak > vo.true_peak + 0.5) findings.push({ level: 'warn', code: 'TRUE_PEAK', msg: `true peak ${m.true_peak.toFixed(1)} dBTP above ${vo.true_peak}` });
 

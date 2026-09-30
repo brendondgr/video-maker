@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { projectPaths } from './paths.mjs';
 
 // Not imported from common.mjs: common.mjs imports this module (projectDir → syncProject).
 const ENGINE_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -69,8 +70,9 @@ function syncRootAttributes(dir, sb) {
   // The mastered mix (voiceover.mjs) plays as one HyperFrames audio clip, so HF renders and
   // Studio hear exactly what render.mjs muxes.
   const T = timelineTotal(sb);
-  const mix = fs.existsSync(path.join(dir, 'audio', 'mix.wav'))
-    ? `\n    <audio id="vm-mix" src="audio/mix.wav" data-start="0" data-duration="${T}" data-volume="1" data-track-index="0"></audio>\n  ` : '';
+  const P = projectPaths(dir, sb);
+  const mix = fs.existsSync(P.mix)
+    ? `\n    <audio id="vm-mix" src="${P.rel.mix}" data-start="0" data-duration="${T}" data-volume="1" data-track-index="0"></audio>\n  ` : '';
   const next = html.replace(/<div\s+id="stage"[^>]*>[\s\S]*?<\/div>/, `<div ${attrs}>${mix}</div>`);
   let out = next;
   if (!/__timelines\s*=/.test(out)) {
