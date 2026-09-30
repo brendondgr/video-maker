@@ -29,9 +29,29 @@ quality, never resolution.**
 | audio | `audio/mix.wav` if present | `--audio file [--audio-offset s]` overrides; `--no-audio` renders silent |
 | `--deliver dir` | — | copy `<slug>.mp4` (or `<slug>-4k.mp4`) + `<slug>.srt/.vtt` + `poster.png` (`meta.poster_t`, default 40 %) to `dir`. Layout-1 projects keep the old `<slug>-WxH-fps` names |
 | `--with-edit` | — | with `--deliver`: also copy the edit package (`edit/`) |
+| `--edit` | — | render only the edit package's stale clips into `edit/` (below) |
 | `--out path` | `out/<slug>-<W>x<H>-<fps>fps[-draft].mp4` | |
 | `--force` | — | render even if the composition reported errors |
 | `--chrome path` | Playwright's Chromium | or env `VM_CHROME` |
+
+## Edit package clips (`--edit`)
+
+`render.mjs <project> --edit` renders one clip per scene (the scene alone, `?solo=<id>`, plus
+`--handles` seconds of held first/last frame on each side, default 1), one clip per transition
+(the whole video over the overlap) and, with captions or overlays, a transparent caption layer.
+Only clips whose inputs changed are rendered (`segments.mjs <project>` shows which); each is
+replaced in place under its stable name. `--only hook,hops` limits it, `--force` re-renders.
+Requires layout 2 (`migrate-layout.mjs`).
+
+| `--edit-codec` | File | Size at 1080p30 | Notes |
+|---|---|---|---|
+| `prores` (default) | `.mov` ProRes 422, 10-bit | up to ~1.1 GB/min (flat graphics compress far better) | opens everywhere, incl. Resolve free on Linux |
+| `prores-hq` | `.mov` ProRes 422 HQ | up to ~1.6 GB/min | |
+| `dnxhr` | `.mov` DNxHR HQ | similar to ProRes HQ | |
+| `h264i` | `.mp4` all-intra H.264 | much smaller | Resolve free on Linux cannot decode H.264 |
+
+4K (`--4k`) is about four times the size. Set a project default in `storyboard.edit`
+(`{ "codec": "prores", "handles": 1 }`).
 
 ## Presets (`new-project.mjs --preset`)
 

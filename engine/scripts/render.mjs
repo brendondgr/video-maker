@@ -8,7 +8,9 @@
 //                             [--4k]             (2× the canvas, e.g. 3840×2160; default is the canvas size)
 //                             [--deliver ~/Videos/CustomSkill/<slug>]  (copy mp4 + captions + poster there)
 //                             [--with-edit]      (with --deliver: also copy the edit package, edit/)
-//                             [--no-audio]       (ignore audio/mix.wav)
+//                             [--no-audio]       (ignore the mix)
+//                             [--edit]           (render the edit package's stale clips into edit/: --edit-codec
+//                                                 prores|prores-hq|dnxhr|h264i, --handles 1, --only id,…, --force)
 //
 // Every frame i is produced by window.__vm.seek(i / fps) followed by a screenshot, so
 // output is deterministic and workers can render disjoint frame ranges in parallel.
@@ -48,6 +50,13 @@ async function main() {
   const mixFile = P.mix;
   if (args['no-audio']) delete args.audio;
   else if (!args.audio && (args.engine || 'vm') === 'vm' && fs.existsSync(mixFile)) args.audio = mixFile;
+  if (args.edit) {
+    if (args.engine === 'hf') throw new Error('--edit renders with the vm engine; drop --engine hf');
+    const { renderEditClips } = await import('./lib/clips.mjs');
+    await renderEditClips(dir, sb, args);
+    writeReadme(dir, sb);
+    return null;
+  }
   if ((args.engine || 'vm') === 'hf') return renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format });
   if (args.engine && args.engine !== 'vm') throw new Error('--engine must be vm or hf');
   if (!(await which('ffmpeg')) && format !== 'png') throw new Error('ffmpeg not found on PATH');

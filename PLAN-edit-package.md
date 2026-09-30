@@ -311,7 +311,7 @@ item fresh or stale.
 Editing `style.css` marks everything stale.
 **Commit:** `Add the clip plan and cache fingerprints (lib/segments.mjs)`
 
-#### [ ] C2 · Render scene and transition clips into `edit/video/`
+#### [x] C2 · Render scene and transition clips into `edit/video/`
 **Do:**
 1. `render.mjs --edit` (and `clips.mjs` as a thin alias): for each stale V1 item, open the
    composition in solo mode and capture PNG frames for `0…dᵢ`. FFmpeg writes them with
