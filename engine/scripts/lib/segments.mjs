@@ -44,7 +44,7 @@ export function overlayNames(sb, dir) {
   return names;
 }
 
-export function clipPlan(sb, dir, { fps = sb.canvas?.fps || 30, handles = EDIT_DEFAULTS.handles, codec = EDIT_DEFAULTS.codec, scale = 1 } = {}) {
+export function clipPlan(sb, dir, { fps = sb.canvas?.fps || 30, handles = EDIT_DEFAULTS.handles, codec = EDIT_DEFAULTS.codec, scale = 1, quality = 'standard' } = {}) {
   const P = projectPaths(dir, sb);
   const ext = EDIT_CODECS[codec].ext;
   const times = sceneTimes(sb);
@@ -84,7 +84,7 @@ export function clipPlan(sb, dir, { fps = sb.canvas?.fps || 30, handles = EDIT_D
     kind: 'overlay', id: 'captions', names, file: path.join(P.editOverlay, 'captions' + ALPHA_CODEC.ext),
     render: { start: 0, frames: total }, media: { frames: total }, timeline: { start: 0, end: total }, source: { start: 0, frames: total }
   } : null;
-  return { fps, handles: H, codec, scale, total, scenes, transitions, overlay, pieces };
+  return { fps, handles: H, codec, scale, quality, total, scenes, transitions, overlay, pieces };
 }
 
 // ------------------------------------------------------------------ fingerprints
@@ -103,7 +103,7 @@ export function sharedInputs(sb, dir, settings) {
   const html = String(readOr(path.join(dir, 'index.html'))).replace(/<div\s+id="stage"[^>]*>[\s\S]*?<\/div>/, '');
   const scripts = (sb.assets?.scripts || []).filter((s) => !/^https?:|^\/_engine\//.test(s)).map((s) => readOr(path.join(dir, s)));
   const lib = walk(path.join(dir, 'lib')).map((f) => [path.relative(dir, f), readOr(f)]).flat();
-  return sha(runtimeHash, html, readOr(path.join(dir, 'style.css')), ...scripts, ...lib, sb.style, sb.canvas, sb.assets, settings.codec, settings.fps, settings.scale);
+  return sha(runtimeHash, html, readOr(path.join(dir, 'style.css')), ...scripts, ...lib, sb.style, sb.canvas, sb.assets, settings.codec, settings.fps, settings.scale, settings.quality || 'standard');
 }
 
 // Asset paths a scene names ('assets/img/city.jpg', "assets/…"), hashed by content.
@@ -116,7 +116,7 @@ const NON_VISUAL = new Set(['narration', 'voice', 'sfx', 'silent', 'purpose']);
 const visualSpec = (s) => Object.fromEntries(Object.entries(s).filter(([k]) => !NON_VISUAL.has(k)));
 
 export function fingerprints(sb, dir, plan) {
-  const shared = sharedInputs(sb, dir, { codec: plan.codec, fps: plan.fps, scale: plan.scale });
+  const shared = sharedInputs(sb, dir, { codec: plan.codec, fps: plan.fps, scale: plan.scale, quality: plan.quality });
   const out = {};
   const sceneKey = {};
   for (const s of plan.scenes) {

@@ -9,6 +9,7 @@
 //                             [--deliver ~/Videos/CustomSkill/<slug>]  (copy mp4 + captions + poster there)
 //                             [--with-edit]      (with --deliver: also copy the edit package, edit/)
 //                             [--no-audio]       (ignore the mix)
+//                             [--direct]         (layout 2: render in one pass instead of assembling from edit/)
 //                             [--edit]           (render the edit package's stale clips into edit/: --edit-codec
 //                                                 prores|prores-hq|dnxhr|h264i, --handles 1, --only id,…, --force)
 //
@@ -56,6 +57,24 @@ async function main() {
     await renderEditClips(dir, sb, args);
     writeReadme(dir, sb);
     return null;
+  }
+  // Layout 2: a whole-video render is assembled from the edit package (only stale clips are
+  // rendered, then FFmpeg joins them). --direct, drafts, previews and other formats render in one
+  // pass as before.
+  const partial = args.scene || args.from != null || args.to != null;
+  if (P.layout >= 2 && !args.direct && !partial && (args.engine || 'vm') === 'vm' && args.quality !== 'draft' && ['mp4', 'webm'].includes(format)) {
+    const { renderEditClips } = await import('./lib/clips.mjs');
+    const { assemble } = await import('./lib/assemble.mjs');
+    const started = Date.now();
+    const r = await renderEditClips(dir, sb, args);
+    const outW = Math.round(canvas.width * scale / 2) * 2, outH = Math.round(canvas.height * scale / 2) * 2;
+    const out = path.resolve(args.out || path.join(P.exports, exportName(sb, dir, { width: outW, height: outH, fps, scale, ext: '.' + format })));
+    const t0 = Date.now();
+    await assemble({ plan: r.plan, out, mix: args.audio, quality: args.quality || 'standard', codec, format });
+    const size = (await fsp.stat(out)).size;
+    console.log(`✔ wrote ${out}  (assembled from edit/ in ${((Date.now() - t0) / 1000).toFixed(1)}s; ${r.rendered.length} clip(s) rendered, ${r.fresh} reused; ${((Date.now() - started) / 1000).toFixed(1)}s total)`);
+    console.log(`  ${(size / 1e6).toFixed(2)} MB — verify with: node ${path.relative(process.cwd(), path.join(path.dirname(fileURLToPath(import.meta.url)), 'verify-output.mjs'))} ${path.relative(process.cwd(), dir) || '.'} ${path.relative(process.cwd(), out)}${scale !== 1 ? ' --expect-height ' + outH : ''}`);
+    return out;
   }
   if ((args.engine || 'vm') === 'hf') return renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format });
   if (args.engine && args.engine !== 'vm') throw new Error('--engine must be vm or hf');

@@ -70,8 +70,10 @@ export async function renderEditClips(dir, sb, args = {}) {
   const scale = args['4k'] ? 2 : 1;
   const e = editSettings(sb, args);
   const codec = EDIT_CODECS[e.codec];
-  const capture = CAPTURE[args.quality || 'standard'] || CAPTURE.standard;
-  const { plan, items, manifest } = planStatus(sb, dir, { fps, handles: e.handles, codec: e.codec, scale });
+  // Edit media is never draft quality: a draft render uses the direct path (render.mjs).
+  const quality = args.quality === 'high' ? 'high' : 'standard';
+  const capture = CAPTURE[quality];
+  const { plan, items, manifest } = planStatus(sb, dir, { fps, handles: e.handles, codec: e.codec, scale, quality });
   const only = args.only ? new Set(String(args.only).split(',')) : null;
   const todo = items.filter((it) => (args.force || it.stale) && (!only || only.has(it.id) || only.has(it.from) || only.has(it.to)));
 

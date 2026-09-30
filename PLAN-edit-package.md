@@ -414,12 +414,15 @@ this machine. Record the result in section 6.
 
 ### Phase F — Final export from `edit/`, and wrap-up
 
-#### [ ] F1 · Assemble `exports/<slug>.mp4` from the edit package
+(F1 was done before E4, so the SKILL.md hand-off step could describe the final behaviour.)
+
+#### [x] F1 · Assemble `exports/<slug>.mp4` from the edit package
 **Do:** `render.mjs` default = C2/C3 (only stale clips) → assemble per section 3.4 →
 `exports/<slug>.mp4`. `--direct` keeps today's single-pass render (always used for `--scene`,
 `--from`/`--to` previews and `--engine hf`). `verify-output.mjs --against <file>` compares two renders.
-**Verify:** assembled vs `--direct` on both examples: PSNR > 40 dB on every sampled frame, same
-duration to ±1 frame, the audio stream identical. A one-scene edit → the re-export finishes in
+**Verify:** assembled vs `--direct` on both examples: same frame count, the audio stream
+bit-identical, every frame as close to a lossless page screenshot as the direct render's
+(the two lossy encodes differ from each other by ~40–48 dB). A one-scene edit → the re-export finishes in
 roughly that scene's render time plus seconds.
 **Commit:** `Assemble the final export from the edit package`
 
