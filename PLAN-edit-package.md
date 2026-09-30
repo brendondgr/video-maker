@@ -298,7 +298,7 @@ the same set into `exports/`. `--with-edit` also copies `edit/`. Update the `SKI
 
 ### Phase C — Per-scene render cache
 
-#### [ ] C1 · Clip plan and fingerprints
+#### [x] C1 · Clip plan and fingerprints
 **Do:** `engine/scripts/lib/segments.mjs`:
 - `clipPlan(sb, fps, handles)` returns the V1/V2/V3 items with timeline ranges and source ranges
   in frames (section 3.1);
