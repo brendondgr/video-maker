@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 // Run gates 1–4 in order and write qa/report.md. Stops early on errors unless --keep-going.
 //
-//   node qa.mjs <project> [--keep-going] [--no-snapshot] [--no-determinism] [--samples 3] [--no-hf]
+//   node qa.mjs <project> [--keep-going] [--no-snapshot] [--no-determinism] [--samples 3] [--no-hf] [--no-isolation]
+//
+// Gate 3c renders each scene alone (?solo=) and compares it with the same scene inside the video:
+// the per-scene clips of the edit package depend on it.
 //
 // Gate 3b runs HyperFrames' own `check` (lint + runtime + layout + motion + contrast sweep in
 // Chrome) on the same composition. Its findings inside a transition window are downgraded to
@@ -13,6 +16,7 @@ import { validateStoryboard } from './validate-storyboard.mjs';
 import { lint } from './lint.mjs';
 import { check } from './check.mjs';
 import { snapshot } from './snapshot.mjs';
+import { checkIsolation } from './check-isolation.mjs';
 import { runHF, sceneTimes, HF_BIN } from './lib/hf.mjs';
 import fs from 'node:fs';
 import { projectPaths } from './lib/paths.mjs';
@@ -41,6 +45,7 @@ async function gate(name, fn) {
 await gate('Gate 1 · storyboard', () => validateStoryboard(dir));
 await gate('Gate 2 · lint', () => lint(dir));
 await gate('Gate 3 · runtime check', () => check(dir, { samples: args.samples, determinism: !args['no-determinism'], chrome: args.chrome }));
+if (!args['no-isolation']) await gate('Gate 3c · scene isolation', () => checkIsolation(dir, { chrome: args.chrome }));
 if (!args['no-hf'] && fs.existsSync(HF_BIN)) await gate('Gate 3b · HyperFrames check', () => hfCheck(dir));
 
 async function hfCheck(dir) {

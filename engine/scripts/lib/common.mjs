@@ -95,7 +95,9 @@ export async function launchBrowser(args = {}) {
 }
 
 /** Open the composition in render mode and wait for window.__vm.ready. */
-export async function openComposition(browser, baseUrl, { width, height, scale = 1, timeout = 60000, render = true, query = '' } = {}) {
+export async function openComposition(browser, baseUrl, { width, height, scale = 1, timeout = 60000, render = true, query = '', solo = null, layer = null } = {}) {
+  if (solo) query = [query, 'solo=' + encodeURIComponent(solo)].filter(Boolean).join('&');
+  if (layer) query = [query, 'layer=' + encodeURIComponent(layer)].filter(Boolean).join('&');
   const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: scale });
   const page = await context.newPage();
   const logs = { console: [], pageErrors: [], failedRequests: [], external: [] };

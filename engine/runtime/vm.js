@@ -187,7 +187,17 @@
     var W = canvas.width, H = canvas.height, FPS = canvas.fps;
     var warnings = [], errors = [];
 
+    // Render modes for the edit package (render.mjs --edit):
+    //   ?solo=<id>        only that scene, as a cut, no overlays, starting at local time 0
+    //   ?layer=scenes     the whole video without overlays (transition clips)
+    //   ?layer=overlays   overlays only, over a transparent page (the caption layer)
+    var MODE = { solo: opts.solo || params.get('solo') || null, layer: opts.layer || params.get('layer') || null };
+    if (MODE.layer && MODE.layer !== 'scenes' && MODE.layer !== 'overlays') throw new Error('layer must be "scenes" or "overlays"');
+    var hideScenes = MODE.layer === 'overlays';
+    var noOverlays = !!MODE.solo || MODE.layer === 'scenes';
+
     applyStyle(sb.style || {}, canvas);
+    document.documentElement.classList.toggle('vm-layer-overlays', hideScenes);
     document.documentElement.classList.toggle('vm-render', RENDER);
     document.documentElement.classList.toggle('vm-preview', !RENDER);
 
@@ -216,6 +226,10 @@
     var cursor = 0;
     var scenes = sb.scenes || [];
     if (!scenes.length) throw new Error('storyboard has no scenes');
+    if (MODE.solo) {
+      scenes = scenes.filter(function (s) { return s.id === MODE.solo; });
+      if (!scenes.length) throw new Error('?solo=' + MODE.solo + ': no such scene');
+    }
 
     for (var i = 0; i < scenes.length; i++) {
       var spec = scenes[i];
@@ -225,7 +239,7 @@
       var dur = +spec.duration;
       if (!(dur > 0)) throw new Error('scene "' + spec.id + '" needs a positive duration');
 
-      var tr = spec.transition_in || { type: 'cut', duration: 0 };
+      var tr = (!MODE.solo && spec.transition_in) || { type: 'cut', duration: 0 };
       var trDur = i === 0 ? 0 : Math.min(+tr.duration || 0, dur, sceneRecords[i - 1].duration);
       var at = Math.max(0, cursor - trDur);
 
@@ -273,8 +287,8 @@
 
     // Whole-video overlays sit above every scene and run on composition time.
     var overlayRecords = [];
-    var wanted = (sb.overlays || []).map(function (o) { return typeof o === 'string' ? { name: o } : o; });
-    if (sb.audio && sb.audio.captions && sb.audio.captions.enabled) {
+    var wanted = noOverlays ? [] : (sb.overlays || []).map(function (o) { return typeof o === 'string' ? { name: o } : o; });
+    if (!noOverlays && sb.audio && sb.audio.captions && sb.audio.captions.enabled) {
       if (opts.captions) wanted.push({ name: 'captions', data: opts.captions });
       else warnings.push('audio.captions.enabled but audio/captions.json is missing — run voiceover.mjs');
     }
@@ -311,7 +325,7 @@
       for (var k = 0; k < sceneRecords.length; k++) {
         var r = sceneRecords[k];
         // End is exclusive, except the final scene which owns the last frame.
-        var on = t >= r.start && (t < r.end || (k === sceneRecords.length - 1 && t <= r.end));
+        var on = !hideScenes && t >= r.start && (t < r.end || (k === sceneRecords.length - 1 && t <= r.end));
         r.el.style.visibility = on ? 'visible' : 'hidden';
         r.el.classList.toggle('is-active', on);
         if (on) {
@@ -348,6 +362,7 @@
       frames: Math.max(1, Math.round(total * FPS)),
       scenes: sceneRecords.map(function (r) { return { id: r.id, start: r.start, end: r.end, duration: r.duration }; }),
       overlays: overlayRecords.map(function (r) { return r.id; }),
+      mode: MODE,
       storyboard: sb,
       warnings: warnings,
       errors: errors,

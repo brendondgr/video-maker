@@ -233,7 +233,7 @@ start and end in `audio/timing.json` × fps is an integer. Change a string in on
 gradient-descent: snapshots of every other scene are unchanged (compare `qa/frames` hashes).
 **Commit:** `Seed randomness per scene and snap scene timing to whole frames`
 
-#### [ ] A3 · Solo and layer render modes + isolation gate
+#### [x] A3 · Solo and layer render modes + isolation gate
 **Do:**
 1. `vm.js` `VM.start(opts)`: read `solo` and `layer` from `opts`, or from the `?solo=`/`?layer=`
    URL params already parsed at `vm.js:37`.
@@ -246,7 +246,7 @@ gradient-descent: snapshots of every other scene are unchanged (compare `qa/fram
 3. `lib/common.mjs` `openComposition()`: accept `{ solo, layer }` and append the query string.
 4. New gate **3c · isolation** in `qa.mjs` (logic in `check-isolation.mjs`): for every scene,
    compare 3 solo frames against the full composition at the same times, outside transition
-   windows and with overlays off. Fail on a mean absolute pixel difference above 0.5 %.
+   windows and with overlays off. Fail when more than 0.01 % of pixels differ.
 5. `references/validation.md`: document gate 3c and the usual cause of a failure (a scene reading
    another scene's DOM or state).
 

@@ -42,6 +42,8 @@ body { font-family: var(--f-sans); color: var(--c-ink); -webkit-font-smoothing: 
   contain: strict;
 }
 .vm-render #stage { position: absolute; left: 0; top: 0; }
+/* ?layer=overlays: only overlays (captions…) over a transparent page, captured with alpha. */
+html.vm-layer-overlays, .vm-layer-overlays body, .vm-layer-overlays #stage { background: transparent; }
 
 .vm-scene {
   position: absolute;

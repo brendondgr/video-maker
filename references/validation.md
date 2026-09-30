@@ -1,7 +1,7 @@
 # Validation
 
 Automated gates catch mechanical failures; the visual review catches whether the video is any
-good. Both are required. `qa.mjs` runs gates 1–4 (including 3b, HyperFrames' own check) and writes
+good. Both are required. `qa.mjs` runs gates 1–4 (including 3b, HyperFrames' own check, and 3c, scene isolation) and writes
 `qa/report.md`. Gate 5 runs on the rendered file.
 
 ## Gate 1 — storyboard (`validate-storyboard.mjs`)
@@ -51,6 +51,17 @@ transform conflicts), runtime errors, layout (`content_overlap`, `text_occluded`
 overlap/occlusion inside a transition window is downgraded to info (two scenes share the frame
 there by design). Skipped with `--no-hf` or when the CLI is not installed. Mark intentional
 layering in scene code with `data-layout-allow-overlap` (or `-occlusion`, `-overflow`).
+
+## Gate 3c — scene isolation (`check-isolation.mjs`)
+
+The edit package renders every scene on its own (`?solo=<id>`: that scene only, as a cut, no
+overlays). Gate 3c captures each scene at three scene-local times outside its transition windows,
+once alone and once inside the whole video (`?layer=scenes`), and fails `ISOLATION` when more
+than 0.01 % of the pixels differ (`--tolerance`). `SOLO_BOOT` means the scene does not even build
+alone. The cause is nearly always a scene that reaches outside itself: querying other scenes'
+DOM (`document.querySelectorAll('.vm-scene')`), reading a global an earlier scene set, or state a
+helper kept between scenes. Keep everything a scene needs inside its own `build(ctx)`. Skip
+with `--no-isolation`.
 
 ## Gate 4 — contact sheets (`snapshot.mjs`)
 
