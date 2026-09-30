@@ -398,7 +398,7 @@ Open at least Resolve (`.otio`), Kdenlive (`.otio`), Shotcut (`.mlt`) and OpenSh
 this machine. Record the result in section 6.
 **Commit:** `Convert the timeline to Final Cut, Shotcut, OpenShot, Lightworks, Avid and EDL`
 
-#### [ ] E4 · Skill instructions for the hand-off
+#### [x] E4 · Skill instructions for the hand-off
 **Do:**
 - `SKILL.md`: a new step "Hand off to an editor" after render. It covers: what `edit/` is; run
   `timeline.mjs`; when the user names an editor, run `timeline.mjs --to <editor>` and tell them

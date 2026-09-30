@@ -1,6 +1,6 @@
 # video-maker
 
-A Claude skill that makes narrated motion-graphics videos as code. It works in five steps:
+A Claude skill that makes narrated motion-graphics videos as code. It works in six steps:
 
 1. **Plan.** A storyboard (JSON) holds the scenes, the narration and the beats. Each scene gets
    one small JavaScript builder, animated on a single seekable GSAP timeline.
@@ -17,20 +17,29 @@ A Claude skill that makes narrated motion-graphics videos as code. It works in f
 5. **Render.** Output is deterministic 1080p or 4K MP4, from either the built-in
    Playwright + FFmpeg renderer or **[HyperFrames](https://github.com/heygen-com/hyperframes)**.
    Every project is also a valid HyperFrames composition, so HyperFrames Studio, lint and the
-   renderer work on it directly.
+   renderer work on it directly. Each scene renders to its own cached clip, so after a change
+   only that scene re-renders, and the MP4 is assembled from the clips.
+6. **Hand off.** The clips, audio stems and captions come with an open **OpenTimelineIO**
+   timeline (`edit/<slug>.otio`) for finishing by hand in DaVinci Resolve, Premiere Pro, Kdenlive
+   or Avid, with converters for Final Cut Pro, Shotcut, OpenShot, Lightworks, AAF and EDL
+   (`references/editing.md`).
 
 Start with `SKILL.md`.
 
 ```
 SKILL.md                 the workflow the agent follows
 PLAN.md                  how video-maker and HyperFrames were combined (phased, with status)
+PLAN-edit-package.md     per-scene clips, the OTIO hand-off and project layout v2 (phased, with status)
 references/              workflow, visual playbook, images, long-form, schema, API, visual catalog, motion design,
-                         voice-over, validation, rendering, hyperframes bridge, install (Linux/macOS/Windows × GPU types)
+                         voice-over, validation, rendering, editing (the edit package), hyperframes bridge,
+                         install (Linux/macOS/Windows × GPU types)
 engine/                  runtime (browser) + scripts (Node) + catalog.json   ← run `npm install` here
   runtime/               vm.js (timeline core), transitions.js, boot.js, preview.js, vm.css, helpers/*.js
                          (helpers/kit*.js = the scene kit: frame parts, step-by-step diagrams, charts, UI mock-ups)
   scripts/               new-project, design, validate-storyboard, plan, images, lint, check, snapshot, qa, voiceover,
-                         preview, render, verify-output, hf (HyperFrames bridge), sync-hyperframes, doctor
+                         preview, render, verify-output, segments, timeline, migrate-layout, check-isolation,
+                         hf (HyperFrames bridge), sync-hyperframes, doctor
+  timeline/              timeline converters: setup.sh/.ps1 (OpenTimelineIO + adapters), convert.py
 imagegen/                bundled image dispatcher (codex / comfy backends, manifest contract), used by images.mjs
 tts/                     speech engines: setup.sh (inspects the machine, then installs), kokoro-tts,
                          breeze/ (breeze-tts + patches), registry.py; install.ps1 for Windows (Kokoro)
@@ -64,9 +73,10 @@ A narrated project:
 node engine/scripts/new-project.mjs videos/demo --title "Demo" --voice am_michael --captions
 # choose this video's look (no default palette; see references/motion-design.md § Choosing a look):
 node engine/scripts/design.mjs videos/demo --bg "#eef1e6" --accent "#2f7a4a" --look "Botanical" --why "a plant-biology explainer"
-# write brief.md, storyboard.json (with narration) and scenes/*.js, then:
+# write docs/brief.md, storyboard.json (with narration) and scenes/*.js, then:
 node engine/scripts/voiceover.mjs videos/demo && node engine/scripts/qa.mjs videos/demo
-node engine/scripts/render.mjs videos/demo --engine hf --quality high --deliver ~/Videos/CustomSkill/demo
+node engine/scripts/render.mjs videos/demo --quality high --deliver ~/Videos/CustomSkill/demo   # clips → exports/demo.mp4
+node engine/scripts/timeline.mjs videos/demo [--to finalcut|shotcut|openshot|…]              # edit/demo.otio for an editor
 ```
 
 Licences:

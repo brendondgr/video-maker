@@ -16,10 +16,10 @@ two renderers, two linters and the HyperFrames Studio editor all work on the sam
 ten vendored HyperFrames skills serve as reference libraries for motion, design, audio and media.
 
 ```
-brief.md ─► storyboard.json ─► PLAN.md ─► images ─► voiceover ─► scenes/*.js ─► QA gates ─► render ─► verify ─► deliver
- (what/why/  (scenes, narration,  (shown to   (generated  (TTS → retime  (scene kit;     (lint, runtime,  (vm or hf  (file,     (~/Videos/…)
-  look)       beats, visuals,      the user)   illustr.,   → captions/    diagrams built  HF, eyes)        engine)   audio)
-              images, roles)                   background)  mix)          on the words)
+brief.md ─► storyboard.json ─► PLAN.md ─► images ─► voiceover ─► scenes/*.js ─► QA gates ─► render ─► verify ─► hand-off ─► deliver
+ (what/why/  (scenes, narration,  (shown to   (generated  (TTS → retime  (scene kit;     (lint, runtime,  (clips per  (file,     (edit/ +    (~/Videos/…)
+  look)       beats, visuals,      the user)   illustr.,   → captions/    diagrams built  HF, isolation,   scene →    audio)     .otio for
+              images, roles)                   background)  mix, stems)   on the words)   eyes)            MP4)                  any editor)
 ```
 
 **How scenes look is standardised** (`references/visual-playbook.md`): each idea gets the right
@@ -96,7 +96,13 @@ node "$SKILL_DIR/engine/scripts/new-project.mjs" videos/<slug> --title "<Title>"
      --voice am_michael --captions
 ```
 
-Fill `brief.md` **before** storyboarding:
+The project folder has three zones (layout 2; `README.md` in it explains them): the composition you
+author at the root (`storyboard.json`, `index.html`, `style.css`, `scenes/`, `lib/`) with `docs/`
+(brief, plan, script) and `assets/` (inputs); the hand-off in `edit/` (the edit package) and
+`exports/` (finished videos); and a disposable `.build/` (caches, QA output, previews). Older
+projects keep the flat layout until `migrate-layout.mjs <project>` converts them.
+
+Fill `docs/brief.md` **before** storyboarding:
 - the request and the sources digested;
 - the audience and the goal (what the viewer should know, feel or do at the end);
 - at most 5 key messages;
@@ -283,6 +289,7 @@ node "$SKILL_DIR/engine/scripts/qa.mjs" videos/<slug>      # → qa/report.md + 
 | 2 · lint | the determinism rules |
 | 3 · runtime | errors; determinism; text that is off-stage, clipped, tiny, overlapping or low-contrast; blank frames |
 | 3b · HyperFrames check | the same page through HF's lint/layout/motion/contrast sweep (transition-window overlaps count as info) |
+| 3c · scene isolation | each scene renders the same alone as inside the video (its edit clip depends on it) |
 | 4 · snapshots | contact sheets |
 
 **Then Read every contact sheet** and score it with the rubric in `references/validation.md` and
@@ -297,15 +304,21 @@ caption covering a label, or a 3D camera pointing at nothing.
 
 ```bash
 node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> --engine hf --quality draft     # fast full-res check
-node "$SKILL_DIR/engine/scripts/verify-output.mjs" videos/<slug> videos/<slug>/out/<file>.mp4
-node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> --engine hf --quality high [--4k] --deliver <dir>
+node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> [--quality high] [--4k] --deliver <dir>   # final
+node "$SKILL_DIR/engine/scripts/verify-output.mjs" videos/<slug> videos/<slug>/exports/<slug>.mp4
 ```
 
+- **The final render builds the edit package.** For a whole video, `render.mjs` renders each
+  scene, each transition and the caption layer as its own clip in `edit/` (only clips whose
+  inputs changed; `segments.mjs <project>` shows which), then FFmpeg assembles
+  `exports/<slug>.mp4` from them. After a one-scene fix, only that scene and its transitions
+  re-render. `--direct` renders in one pass instead.
 - **`--engine hf`** (HyperFrames: beginFrame capture, about 3× faster) and **`--engine vm`** (ours,
-  the default) produce the same frames.
+  the default) produce the same frames. `hf`, drafts and partial renders are one-pass and don't
+  touch `edit/`.
 - **Use `vm`** for `--scene` / `--from --to` partial renders, `--codec h265` and PNG frames.
 - **Use `hf`** for `--format mov|gif`, `--docker` or `--gpu`.
-- **Audio:** `audio/mix.wav` is included automatically on both engines. `--no-audio` renders
+- **Audio:** the mix (`edit/audio/mix.wav`) is included automatically on both engines. `--no-audio` renders
   silent; `--audio f` overrides the mix.
 - **`--deliver <dir>`** copies `<slug>.mp4` (`<slug>-4k.mp4` for 4K), its `.srt`/`.vtt` and
   `poster.png`. `--with-edit` also copies the edit package (`edit/`).
@@ -314,10 +327,37 @@ Gate 5 (`verify-output.mjs`) checks resolution, fps, frame count, audio presence
 black or frozen stretches. Extract and look at 2–3 frames from the final file. More detail:
 `references/rendering.md`.
 
-## 9 · Deliver
+## 9 · Hand off to an editor
+
+People finish videos by hand: trimming, re-pacing, re-mixing, colour. Every final render leaves
+an **edit package** for that, so after it:
+
+```bash
+node "$SKILL_DIR/engine/scripts/timeline.mjs" videos/<slug>                  # edit/<slug>.otio
+node "$SKILL_DIR/engine/scripts/timeline.mjs" videos/<slug> --to <editor>    # when the user names one
+```
+
+- The `.otio` (OpenTimelineIO) opens directly in DaVinci Resolve, Premiere Pro, Kdenlive 25.04+
+  and Avid: V1 scene clips with 1 s handles, V2 transitions, V3 caption layer, A1 voice per scene,
+  A2 music, A3 sfx, A4 the mastered mix (disabled), and markers at scene starts and beats.
+- **When the user names an editor** (Final Cut Pro, Shotcut, OpenShot, Lightworks, older
+  Premiere or Kdenlive, Avid AAF, EDL), run `--to <editor>` (`--list` shows the names). Tell them
+  which file to open, how (the menu path in `references/editing.md`) and what that format loses;
+  the script prints the loss from its read-back check. The converters install once with
+  `bash engine/timeline/setup.sh`.
+- **After changing a video the user may already be editing**, re-render (only changed clips are
+  replaced, in place, same names) and say which clips changed and whether any **length** changed:
+  a changed length means that clip needs a trim in their editor, or a fresh import of the `.otio`.
+- Their editor project is theirs: never overwrite or regenerate it. Inside-a-scene changes
+  (a label, a chart, a colour) still come back to the scene code.
+
+Details, per-editor steps and troubleshooting: `references/editing.md`.
+
+## 10 · Deliver
 
 Hand over:
-- the final MP4 in the delivery folder, plus the poster and the `.srt`;
+- the final MP4 in the delivery folder, plus the poster and the `.srt` (`--with-edit` adds the
+  edit package when the user will finish it by hand);
 - a short note: length, resolution, voice, the look, the scene list, the assumptions made, anything
   *illustrative*, and any QA warnings you accepted, with why.
 
@@ -356,6 +396,7 @@ Extend it by adding rather than forking.
 | `references/voiceover.md` | Narration, voices, retiming, captions, SFX, music, loudness |
 | `references/validation.md` | Gates, the visual rubric, common failures and fixes |
 | `references/rendering.md` | Engines, render flags, 1080p/4K, delivery, performance, troubleshooting |
+| `references/editing.md` | The edit package: tracks, which file each editor opens, conversions, handles, changes after hand-off |
 | `references/hyperframes.md` | The bridge, the two authoring modes, translating HF snippets, where each HF topic lives |
 | `references/install.md` | Installing on Linux/macOS/Windows for each GPU type; TTS troubleshooting |
 | `vendor/hyperframes/skills/*` | HyperFrames' own references (routed from `references/hyperframes.md`) |
