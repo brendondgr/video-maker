@@ -64,6 +64,9 @@ desktop.ini
 # --- Project layout 2 (generated; see engine/scripts/lib/paths.mjs) ---
 # disposable caches, QA output and previews
 **/.build/
-# the edit package (per-scene clips, stems, timeline) and finished exports
-**/edit/
+# the edit package's media (per-scene clips, caption layer, audio stems) and finished exports;
+# edit/captions/ and the timeline files are small text and stay trackable
+**/edit/video/
+**/edit/overlay/
+**/edit/audio/
 **/exports/

@@ -23,9 +23,9 @@ committed, `[~]` = in progress, `[ ]` = not started. Each step below is **one co
 | D5 | **Timeline layout:** V1 scenes · V2 transitions · V3 captions · A1 voice · A2 music · A3 sfx · A4 mastered mix (disabled) · beat markers. | settled |
 | D6 | **Edit media:** ProRes 422 (`.mov`) for video, ProRes 4444 for the caption layer (alpha), 48 kHz / 24-bit WAV for audio, SRT/VTT for captions. ProRes and WAV are chosen because they decode in every target editor on every OS; DaVinci Resolve **free on Linux cannot decode H.264 or AAC**. | settled |
 | D7 | **Handles:** every scene clip carries 1 s of extra frames before and after its cut points (the scene's first / last frame held). | settled |
-| D8 | **Clip names = scene id** (`edit/video/hook.mov`), no number prefix: reordering scenes must not rename files and break links in the editor. The timeline carries the order. | default — confirm before B1 |
-| D9 | **Premiere:** `.otio` for current versions, FCP7 XML (`--to premiere-legacy`) for older ones. | default — confirm before E3 |
-| D10 | **Existing projects** keep working on the old layout (v1). `migrate-layout.mjs` converts one project on request. The two examples are migrated in B2. | default — confirm before B2 |
+| D8 | **Clip names = scene id** (`edit/video/hook.mov`), no number prefix: reordering scenes must not rename files and break links in the editor. The timeline carries the order. | settled (the user asked to proceed) |
+| D9 | **Premiere:** `.otio` for current versions, FCP7 XML (`--to premiere-legacy`) for older ones. | settled (the user asked to proceed) |
+| D10 | **Existing projects** keep working on the old layout (v1). `migrate-layout.mjs` converts one project on request. The two examples are migrated in B2. | settled (the user asked to proceed) |
 | D11 | **The final MP4 is assembled from `edit/`** (FFmpeg only, no browser), so the delivered file and the editor's material are identical. The old single-pass render stays as `render.mjs --direct`. | settled |
 | D12 | The **HyperFrames engine** (`--engine hf`) stays a whole-composition renderer. The edit package is built by the vm engine only. | settled |
 
@@ -269,14 +269,15 @@ checkerboard in `preview.mjs`.
 4. New `engine/scripts/lib/readme.mjs` writes `<slug>/README.md`: the three zones, what each
    folder holds, "to edit: open `edit/<slug>.otio`", and the current render state. It is
    refreshed by `plan.mjs`, `render.mjs` and `timeline.mjs`.
-5. `.gitignore`: add `**/.build/`, `**/edit/`, `**/exports/`. Keep `**/out/` and `**/qa/` for v1.
+5. `.gitignore`: add `**/.build/`, `**/edit/{video,overlay,audio}/`, `**/exports/` (captions and
+   timeline files are small text and stay trackable). Keep `**/out/` and `**/qa/` for v1.
 
 **Verify:** `new-project.mjs /tmp/vm-v2 --title T` → full pipeline (validate, plan, voiceover,
 qa, render) writes only inside the v2 folders. `find /tmp/vm-v2 -maxdepth 1` shows exactly the
 tree in section 2. Both v1 examples still pass `qa.mjs`.
 **Commit:** `Project layout v2: docs/, edit/, exports/, .build/ and a generated README`
 
-#### [ ] B2 · Migration script; migrate the examples
+#### [x] B2 · Migration script; migrate the examples
 **Do:**
 1. `engine/scripts/migrate-layout.mjs <project> [--dry-run]`: move files per the path map,
    rewrite the `index.html` audio src, set `meta.layout: 2`, write the README, remove empty v1
