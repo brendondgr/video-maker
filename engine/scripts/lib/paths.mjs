@@ -3,11 +3,17 @@
 //   const P = projectPaths(dir[, sb]);   P.mix, P.qa, P.captions.json, P.rel.mix, …
 //
 // Layout 1 is the original flat layout (brief.md, audio/, qa/, out/ at the project root).
-// Scripts pick the layout from storyboard.meta.layout, so old projects keep working unchanged.
+// Layout 2 (storyboard.meta.layout = 2, what new-project.mjs creates) has three zones:
+//   author    the composition at the root (storyboard.json, index.html, style.css, scenes/,
+//             lib/), docs/ (brief, plan, script) and assets/ (inputs only)
+//   hand-off  edit/ (per-scene clips, stems, captions, the .otio timeline) and exports/
+//   disposable .build/ (caches, QA output, previews): safe to delete at any time
+// Scripts pick the layout from storyboard.meta.layout, so old projects keep working unchanged;
+// migrate-layout.mjs converts one. The runtime mirrors the captions path in runtime/boot.js.
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const LATEST_LAYOUT = 1;
+export const LATEST_LAYOUT = 2;
 
 export function layoutOf(sb) { return +(sb?.meta?.layout) >= 2 ? 2 : 1; }
 
@@ -22,7 +28,16 @@ const V1 = {
   editVoice: 'edit/audio/voice', editSfx: 'edit/audio/sfx', editMusic: 'edit/audio/music.wav'
 };
 
-const LAYOUTS = { 1: V1 };
+const V2 = {
+  ...V1,
+  docs: 'docs', brief: 'docs/brief.md', plan: 'docs/PLAN.md', script: 'docs/SCRIPT.md',
+  qa: '.build/qa', previews: '.build/previews', exports: 'exports',
+  voiceCache: '.build/voice/cache', voiceWav: '.build/voice/voiceover.wav', premix: '.build/voice/premix.wav',
+  timing: '.build/voice/timing.json',
+  captionsDir: 'edit/captions', mix: 'edit/audio/mix.wav'
+};
+
+const LAYOUTS = { 1: V1, 2: V2 };
 
 /** Absolute paths for a project (and the same paths relative to it under `.rel`). */
 export function projectPaths(dir, sb) {

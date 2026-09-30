@@ -12,6 +12,7 @@ import path from 'node:path';
 import { parseArgs, projectDir, readJSON } from './lib/common.mjs';
 import { timelineTotal, sceneTimes } from './lib/hf.mjs';
 import { projectPaths } from './lib/paths.mjs';
+import { writeReadme } from './lib/readme.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
@@ -129,4 +130,5 @@ chapters.forEach((c) => {
   });
 });
 fs.writeFileSync(P.script, sc);
+writeReadme(dir, sb);
 console.log(`✔ ${P.rel.plan} + ${P.rel.script} · ${sb.scenes.length} scenes · ${totalWords} words · ${voiced ? 'actual' : 'est.'} ${fmt(total)}`);

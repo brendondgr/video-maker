@@ -24,6 +24,7 @@ import { syncProject, timelineTotal, sceneTimes } from './lib/hf.mjs';
 import { voSettings, retime, readWav, writeWav, narrationLead, captionGroups, toSRT, toVTT, sfxCues, buildMix, requiredDuration } from './lib/audio.mjs';
 import { synthesize, voiceKey, voiceLabel, engineFor } from './lib/tts.mjs';
 import { projectPaths } from './lib/paths.mjs';
+import { writeReadme } from './lib/readme.mjs';
 
 const args = parseArgs();
 const dir = projectDir(args);
@@ -122,6 +123,7 @@ console.log(`▶ mix: ${m.tracks} track(s), ${cues.length} sfx cue(s), ${fmtTime
 if (Math.abs(m.lufs - vo.loudness) > 1.5) findings.push({ level: 'warn', code: 'LOUDNESS', msg: `integrated ${m.lufs.toFixed(1)} LUFS vs target ${vo.loudness}` });
 if (m.true_peak > vo.true_peak + 0.5) findings.push({ level: 'warn', code: 'TRUE_PEAK', msg: `true peak ${m.true_peak.toFixed(1)} dBTP above ${vo.true_peak}` });
 
+writeReadme(dir, sb);
 const words = narrated.reduce((n, s) => n + s.narration.trim().split(/\s+/).length, 0);
 findings.push({ level: 'info', code: 'VOICE', msg: `${narrated.length} clip(s), ${words} words over ${fmtTime(T)} (${(words / T).toFixed(2)} w/s overall)` });
 const c = printFindings('Voice-over', findings);

@@ -68,7 +68,9 @@
     }
     var captions = null;
     if (sb.audio && sb.audio.captions && sb.audio.captions.enabled) {
-      var cr = await fetch('audio/captions.json', { cache: 'no-store' }).catch(function () { return null; });
+      // Same locations as engine/scripts/lib/paths.mjs (layout 2 keeps captions in edit/).
+      var capFile = +(sb.meta && sb.meta.layout) >= 2 ? 'edit/captions/captions.json' : 'audio/captions.json';
+      var cr = await fetch(capFile, { cache: 'no-store' }).catch(function () { return null; });
       if (cr && cr.ok) captions = (await cr.json()).groups;
     }
     var api = await window.VM.start({ storyboard: sb, captions: captions });

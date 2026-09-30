@@ -256,7 +256,7 @@ checkerboard in `preview.mjs`.
 
 ### Phase B — Clean project layout
 
-#### [ ] B1 · Layout v2
+#### [x] B1 · Layout v2
 **Do:**
 1. `paths.mjs`: v2 locations (section 2). Layout = `storyboard.meta.layout` (missing = 1).
    Every script uses the paths for the project's layout.
@@ -264,7 +264,8 @@ checkerboard in `preview.mjs`.
    `.build/`) and sets `meta.layout: 2`. Move `templates/project/brief.md` to
    `templates/project/docs/brief.md`.
 3. `lib/hf.mjs` `syncRootAttributes`: the `<audio id="vm-mix">` src comes from `paths.mix`.
-   `syncProject` also writes `index.html`'s `window.__vmPaths`.
+   `boot.js` fetches captions from `edit/captions/` when `meta.layout` is 2. `design.mjs` copies a
+   preset's `design.md` into `docs/`.
 4. New `engine/scripts/lib/readme.mjs` writes `<slug>/README.md`: the three zones, what each
    folder holds, "to edit: open `edit/<slug>.otio`", and the current render state. It is
    refreshed by `plan.mjs`, `render.mjs` and `timeline.mjs`.

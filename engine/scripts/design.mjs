@@ -19,12 +19,14 @@
 // onto the tokens by synonym, then derives whatever the preset lacks. Both print the palette
 // with contrast against bg; fix any ✖ before building. Web fonts are downloaded once into
 // <project>/assets/fonts/ (Fontsource via jsDelivr) with @font-face rules in style.css, so renders
-// stay offline. A preset's prose is copied to <project>/design.md; read it for composition rules.
+// stay offline. A preset's prose is copied to <project>/docs/design.md (layout 1: design.md);
+// read it for composition rules.
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON, writeJSON, SKILL_DIR } from './lib/common.mjs';
 import { TOKENS, parseHex, isDark, chroma, completePalette, contrastReport } from './lib/color.mjs';
+import { projectPaths } from './lib/paths.mjs';
 
 const PRESETS = path.join(SKILL_DIR, 'vendor', 'hyperframes', 'skills', 'hyperframes-creative', 'frame-presets');
 const BUNDLED = { 'inter': "'Inter Variable'", 'jetbrains mono': "'JetBrains Mono Variable'", 'source serif 4': "'Source Serif 4 Variable'" };
@@ -190,6 +192,7 @@ if (fontCss.length) {
   css = `/* design fonts:start */\n${fontCss.join('\n')}\n/* design fonts:end */\n` + css;
   await fsp.writeFile(cssPath, css);
 }
-if (specFile) await fsp.copyFile(specFile, path.join(dir, 'design.md'));
-console.log(`✔ look written to storyboard.json${fontCss.length ? ' + @font-face in style.css' : ''}${specFile ? '; spec copied to design.md' : ''}`);
+const designDoc = path.join(projectPaths(dir, sb).docs, 'design.md');
+if (specFile) { await fsp.mkdir(path.dirname(designDoc), { recursive: true }); await fsp.copyFile(specFile, designDoc); }
+console.log(`✔ look written to storyboard.json${fontCss.length ? ' + @font-face in style.css' : ''}${specFile ? `; spec copied to ${path.relative(dir, designDoc)}` : ''}`);
 if (!look.name || !look.why) console.log('  ▲ style.look has no name/why yet: add --look "<name>" --why "<why it fits>" (shown in PLAN.md)');

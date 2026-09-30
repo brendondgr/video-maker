@@ -290,7 +290,7 @@
     var wanted = noOverlays ? [] : (sb.overlays || []).map(function (o) { return typeof o === 'string' ? { name: o } : o; });
     if (!noOverlays && sb.audio && sb.audio.captions && sb.audio.captions.enabled) {
       if (opts.captions) wanted.push({ name: 'captions', data: opts.captions });
-      else warnings.push('audio.captions.enabled but audio/captions.json is missing — run voiceover.mjs');
+      else warnings.push('audio.captions.enabled but captions.json is missing — run voiceover.mjs');
     }
     for (var oi = 0; oi < wanted.length; oi++) {
       var ow = wanted[oi], odef = overlays[ow.name];

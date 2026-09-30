@@ -12,6 +12,7 @@ import { spawnSync } from 'node:child_process';
 import { parseArgs, readJSON, writeJSON, SKILL_DIR, ENGINE_DIR } from './lib/common.mjs';
 import { syncProject } from './lib/hf.mjs';
 import { projectPaths } from './lib/paths.mjs';
+import { writeReadme } from './lib/readme.mjs';
 
 const args = parseArgs();
 const dir = path.resolve(args._[0] || '');
@@ -40,6 +41,7 @@ if (args.design) {
   if (r.status !== 0) console.warn('  ! design preset not applied (see above)');
 }
 const P = projectPaths(dir, sb);
-for (const d of [P.assets, P.exports, P.qa]) await fsp.mkdir(d, { recursive: true });
+for (const d of [P.docs, P.img, P.fonts, P.music, P.edit, P.exports, P.qa]) await fsp.mkdir(d, { recursive: true });
+writeReadme(dir, sb);
 console.log(`✔ created ${dir}  (${sb.canvas.width}×${sb.canvas.height} @ ${sb.canvas.fps}fps${preset.render_height ? `, render with --height ${preset.render_height}` : ''})`);
-console.log('  next: brief.md → storyboard.json (+ narration, images) → plan.mjs → images.mjs (background) → voiceover → scenes/*.js → qa → render --deliver');
+console.log(`  next: ${P.rel.brief} → storyboard.json (+ narration, images) → plan.mjs → images.mjs (background) → voiceover → scenes/*.js → qa → render --deliver`);

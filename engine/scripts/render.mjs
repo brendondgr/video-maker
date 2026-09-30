@@ -19,6 +19,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, projectDir, readJSON, serve, launchBrowser, openComposition, which, run, fmtTime } from './lib/common.mjs';
 import { projectPaths } from './lib/paths.mjs';
+import { writeReadme } from './lib/readme.mjs';
 
 const QUALITY = {
   draft:    { img: 'jpeg', q: 80,  crf: 28, preset: 'veryfast' },
@@ -235,7 +236,9 @@ async function deliver(out, dir, sb, dest) {
 
 main().then(async (out) => {
   const args = parseArgs();
-  if (!args.deliver || !out || args.format === 'png') return;
+  if (!out) return;
   const dir = projectDir(args);
+  writeReadme(dir);
+  if (!args.deliver || args.format === 'png') return;
   await deliver(out, dir, await readJSON(path.join(dir, 'storyboard.json')), args.deliver);
 }).catch((e) => { console.error('\n✖ render failed:', e.message); process.exit(1); });

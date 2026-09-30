@@ -1,6 +1,7 @@
 {
   "version": 1,
   "meta": {
+    "layout": 2,
     "title": "Untitled video",
     "slug": "untitled",
     "mode": "open",
@@ -45,7 +46,7 @@
     "voiceover": {
       "enabled": false,
       "voice": "af_heart",
-      "speed": 1.0,
+      "speed": 1,
       "retime": "fit"
     },
     "captions": {
