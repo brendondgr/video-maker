@@ -89,9 +89,9 @@ the overlap of scenes `i−1` and `i` is `[sᵢ, eᵢ₋₁)`, of length `trᵢ`
 | V1 | scene `i` | `[sᵢ, sᵢ₊₁)` (last scene: `[sₙ₋₁, eₙ₋₁)`) | solo render of scene `i`, local `0…dᵢ`, padded by `H` held frames each side; source range starts at `H` |
 | V2 | transition `i−1 → i` | `[sᵢ, eᵢ₋₁)` | the full composition over that window, overlays off |
 | V3 | captions / overlays | `[0, T)` | overlay layer only, transparent background |
-| A1 | voice for scene `i` | the narration's span in `timing.json` | cut from the voice track |
+| A1 | voice for scene `i` | `[sᵢ, sᵢ₊₁)`, aligned with its V1 clip | the voice track cut on that range |
 | A2 | music | `[0, T)` | the ducked music bed |
-| A3 | sfx cue | cue time … + length | the cue with its gain applied |
+| A3 | sfx cue | the frame before the cue … + length | the cue with its gain applied, padded to that frame (overlapping cues get extra lanes A3b, A3c…) |
 | A4 | mastered mix | `[0, T)`, track disabled | `mix.wav` |
 
 V2 fully covers every overlap, so the solo scene's missing transition animation is never visible.
@@ -357,7 +357,7 @@ match `mix.wav` exactly: loudnorm limits peaks there, the stems stay linear.)
 
 ### Phase E — Timeline and converters
 
-#### [ ] E1 · Write `edit/<slug>.otio`
+#### [x] E1 · Write `edit/<slug>.otio`
 **Do:** `engine/scripts/timeline.mjs <project>` (plus `engine/scripts/lib/otio.mjs`, a
 dependency-free writer):
 - `Timeline.1` → `Stack.1` with tracks V1 "Scenes", V2 "Transitions", V3 "Captions" and A1–A4.

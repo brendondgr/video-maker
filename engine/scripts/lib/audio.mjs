@@ -284,9 +284,11 @@ function musicChains(music, idx, T, hasVoice, fmt) {
  * bed, full length), sfx/<nn>-<name>.wav (gain baked in), each 48 kHz 32-bit float stereo and
  * carrying the mastering gain, plus edit/audio/stems.json with where each one sits. The timeline
  * (timeline.mjs) places them on A1–A3. A stem is re-encoded only when its inputs change.
- *   voice: [{ id, wav, at, duration }]  ·  sfx: sfxCues().cues  ·  gainDb: buildMix().gain_db
+ * Everything starts on a whole frame: each voice stem is the voice track cut on its scene's V1
+ * range (so it trims with the picture), and each sfx stem is padded to the frame before its cue.
+ *   voice: [{ id, start, end }] (seconds, frame-aligned)  ·  sfx: sfxCues().cues  ·  gainDb: buildMix().gain_db
  */
-export async function writeStems({ dir, sb, P, voice, voiceFile, music, sfx, gainDb }) {
+export async function writeStems({ dir, sb, P, voice, voiceFile, music, sfx, gainDb, fps = sb.canvas?.fps || 30 }) {
   const T = timelineTotal(sb);
   const fmt = 'aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo';
   const g = `volume=${(+gainDb || 0).toFixed(3)}dB`;
@@ -307,9 +309,10 @@ export async function writeStems({ dir, sb, P, voice, voiceFile, music, sfx, gai
     }
     return rel;
   };
-  for (const v of voice) {
-    const file = path.join(P.editVoice, `${v.id}.wav`), key = keyOf(v.wav, stat(v.wav), gainDb);
-    out.voice.push({ id: v.id, file: await produce(file, key, ['-i', v.wav, '-af', `${fmt},${g}`]), at: v.at, duration: v.duration, key });
+  for (const v of voiceFile ? voice : []) {
+    const file = path.join(P.editVoice, `${v.id}.wav`), key = keyOf(stat(voiceFile), v.start, v.end, gainDb);
+    const af = `${fmt},apad,atrim=start=${v.start}:end=${v.end},asetpts=PTS-STARTPTS,${g}`;
+    out.voice.push({ id: v.id, file: await produce(file, key, ['-i', voiceFile, '-af', af]), at: v.start, duration: +(v.end - v.start).toFixed(6), key });
   }
   if (music?.src) {
     const src = path.resolve(dir, music.src), file = P.editMusic;
@@ -321,9 +324,11 @@ export async function writeStems({ dir, sb, P, voice, voiceFile, music, sfx, gai
   }
   for (const [k, c] of sfx.entries()) {
     const name = `${String(k + 1).padStart(2, '0')}-${String(c.name).toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z0-9]+/g, '-')}.wav`;
-    const file = path.join(P.editSfx, name), key = keyOf(c.src, stat(c.src), c.volume, gainDb);
+    const at = Math.floor(c.at * fps + 1e-6) / fps, lead = Math.round((c.at - at) * 48000);
+    const file = path.join(P.editSfx, name), key = keyOf(c.src, stat(c.src), c.volume, gainDb, lead);
     const d = +(await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', c.src])).out.trim();
-    out.sfx.push({ scene: c.scene, name: c.name, file: await produce(file, key, ['-i', c.src, '-af', `${fmt},volume=${c.volume},${g}`]), at: c.at, duration: +d.toFixed(3), key });
+    const af = `${fmt},adelay=${lead}S:all=1,volume=${c.volume},${g}`;
+    out.sfx.push({ scene: c.scene, name: c.name, file: await produce(file, key, ['-i', c.src, '-af', af]), at: +at.toFixed(6), duration: +(d + lead / 48000).toFixed(6), key });
   }
   // Latest only: drop stems that are no longer produced.
   const keep = new Set([...out.voice, ...out.sfx, ...(out.music ? [out.music] : [])].map((s) => path.resolve(P.edit, s.file)));

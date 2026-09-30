@@ -126,8 +126,10 @@ console.log(`▶ mix: ${m.tracks} track(s), ${cues.length} sfx cue(s), ${fmtTime
 if (Math.abs(m.lufs - vo.loudness) > 1.5) findings.push({ level: 'warn', code: 'LOUDNESS', msg: `integrated ${m.lufs.toFixed(1)} LUFS vs target ${vo.loudness}` });
 // Layout 2: stems for the edit package (A1 voice per scene, A2 music, A3 sfx).
 if (P.layout >= 2) {
-  const voice = narrated.map((s) => { const i = sb.scenes.indexOf(s); return { id: s.id, wav: clips[s.id].wav, at: +(times[i].start + narrationLead(sb, i, vo)).toFixed(3), duration: timing.scenes[s.id].duration }; });
-  const st = await writeStems({ dir, sb, P, voice, voiceFile, music: sb.audio.music, sfx: cues, gainDb: m.gain_db });
+  // Each scene's voice is the voice track over its V1 range [Sᵢ, Sᵢ₊₁) (narration never crosses it).
+  const fps = +(sb.canvas?.fps || 30), F = (t) => Math.round(t * fps) / fps;
+  const voice = narrated.map((s) => { const i = sb.scenes.indexOf(s); return { id: s.id, start: F(times[i].start), end: F(i < times.length - 1 ? times[i + 1].start : times[i].end) }; });
+  const st = await writeStems({ dir, sb, P, voice, voiceFile, music: sb.audio.music, sfx: cues, gainDb: m.gain_db, fps });
   console.log(`▶ stems: ${st.voice.length} voice, ${st.music ? 1 : 0} music, ${st.sfx.length} sfx → ${P.rel.editAudio}/ (48 kHz float, ${st.gain_db >= 0 ? '+' : ''}${st.gain_db.toFixed(1)} dB mastering gain)`);
 }
 if (m.true_peak > vo.true_peak + 0.5) findings.push({ level: 'warn', code: 'TRUE_PEAK', msg: `true peak ${m.true_peak.toFixed(1)} dBTP above ${vo.true_peak}` });
