@@ -21,7 +21,7 @@ committed, `[~]` = in progress, `[ ]` = not started. Each step below is **one co
 | D3 | **Latest versions only.** Clips are overwritten in place at stable paths. No versioned files. The cache fingerprint lives in `.build/`, not in filenames. | settled |
 | D4 | **The editor project belongs to the person.** They import the `.otio` once. Their edits live in their editor's own project, which nothing in the skill overwrites. | settled |
 | D5 | **Timeline layout:** V1 scenes · V2 transitions · V3 captions · A1 voice · A2 music · A3 sfx · A4 mastered mix (disabled) · beat markers. | settled |
-| D6 | **Edit media:** ProRes 422 (`.mov`) for video, ProRes 4444 for the caption layer (alpha), 48 kHz / 24-bit WAV for audio, SRT/VTT for captions. ProRes and WAV are chosen because they decode in every target editor on every OS; DaVinci Resolve **free on Linux cannot decode H.264 or AAC**. | settled |
+| D6 | **Edit media:** ProRes 422 (`.mov`) for video, ProRes 4444 for the caption layer (alpha), 48 kHz 32-bit float WAV for audio stems (the mastering gain can push a stem past 0 dBFS; float never clips), SRT/VTT for captions. ProRes and WAV are chosen because they decode in every target editor on every OS; DaVinci Resolve **free on Linux cannot decode H.264 or AAC**. | settled |
 | D7 | **Handles:** every scene clip carries 1 s of extra frames before and after its cut points (the scene's first / last frame held). | settled |
 | D8 | **Clip names = scene id** (`edit/video/hook.mov`), no number prefix: reordering scenes must not rename files and break links in the editor. The timeline carries the order. | settled (the user asked to proceed) |
 | D9 | **Premiere:** `.otio` for current versions, FCP7 XML (`--to premiere-legacy`) for older ones. | settled (the user asked to proceed) |
@@ -340,7 +340,7 @@ is (both ≈ 38–42 dB, limited by the JPEG frame capture that both pipelines u
 
 ### Phase D — Audio stems and captions
 
-#### [ ] D1 · Stems into `edit/audio/`, captions into `edit/captions/`
+#### [x] D1 · Stems into `edit/audio/`, captions into `edit/captions/`
 **Do:** `voiceover.mjs` / `lib/audio.mjs` also write:
 - `edit/audio/voice/<id>.wav`: each scene's narration span from `timing.json`, cut from the voice track;
 - `edit/audio/music.wav`: the ducked bed alone (the same filter chain as the mix, without voice or sfx);
@@ -348,9 +348,11 @@ is (both ≈ 38–42 dB, limited by the JPEG frame capture that both pipelines u
   `edit/audio/sfx/cues.json` with the cue times;
 - `edit/audio/mix.wav` (mastered, as today);
 - `edit/captions/captions.{json,srt,vtt}`.
-Every stem is resampled to 48 kHz / 24-bit. Stems are rewritten only when their inputs change.
-**Verify:** summing the voice, music and sfx stems at their offsets (FFmpeg `amix`, without
-mastering) matches `.build/voice/.premix.wav` within −60 dB of residual.
+Every stem is 48 kHz 32-bit float and carries the mastering gain (`stems.json` records it and
+where each stem sits). Stems are rewritten only when their inputs change.
+**Verify:** summing the voice, music and sfx stems at their offsets matches the pre-master mix
+(`.build/voice/premix.wav`, raised by the mastering gain) within −60 dB of residual. (It can't
+match `mix.wav` exactly: loudnorm limits peaks there, the stems stay linear.)
 **Commit:** `Write voice, music and sfx stems and captions into edit/`
 
 ### Phase E — Timeline and converters

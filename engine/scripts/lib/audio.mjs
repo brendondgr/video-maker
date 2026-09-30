@@ -228,7 +228,7 @@ async function measureLoudness(file, I, TP) {
  * Build audio/mix.wav: narration + optional music bed (sidechain-ducked under the voice, per
  * HF media-use/references/operations.md) + SFX cues, then two-pass loudnorm to the target.
  */
-export async function buildMix({ dir, sb, voiceFile, music, sfx, out, premix }) {
+export async function buildMix({ dir, sb, voiceFile, music, sfx, out, premix, keepPremix = false }) {
   const T = timelineTotal(sb);
   const vo = voSettings(sb);
   const inputs = [], chains = [], mixIn = [];
@@ -237,14 +237,9 @@ export async function buildMix({ dir, sb, voiceFile, music, sfx, out, premix }) 
   let idx = inputs.length / 2;
   if (music?.src) {
     inputs.push('-stream_loop', '-1', '-i', path.resolve(dir, music.src));
-    const vol = music.volume ?? (voiceFile ? 0.12 : 0.9);
-    const fadeOut = Math.max(0, T - (music.fade_out ?? 2.5));
-    chains.push(`[${idx}:a]${fmt},atrim=0:${T},volume=${vol},afade=t=in:d=${music.fade_in ?? 1.5},afade=t=out:st=${fadeOut}:d=${music.fade_out ?? 2.5}[bg0]`);
-    if (voiceFile && music.duck !== false) {
-      chains.push('[vo0]asplit=2[vo][vokey]');
-      chains.push('[bg0][vokey]sidechaincompress=threshold=0.03:ratio=8:attack=200:release=400[bg]');
-      mixIn.push('[vo]', '[bg]');
-    } else { if (voiceFile) mixIn.push('[vo0]'); mixIn.push('[bg0]'); }
+    const bed = musicChains(music, idx, T, !!voiceFile, fmt);
+    chains.push(...bed.chains);
+    mixIn.push(...(voiceFile ? [bed.voice] : []), bed.out);
     idx++;
   } else if (voiceFile) mixIn.push('[vo0]');
   for (const [k, c] of sfx.entries()) {
@@ -264,7 +259,79 @@ export async function buildMix({ dir, sb, voiceFile, music, sfx, out, premix }) 
   const m = await measureLoudness(pre, I, TP);
   const ln = `loudnorm=I=${I}:TP=${TP}:LRA=11:measured_I=${m.input_i}:measured_TP=${m.input_tp}:measured_LRA=${m.input_lra}:measured_thresh=${m.input_thresh}:offset=${m.target_offset}:linear=true`;
   await run('ffmpeg', ['-y', '-v', 'error', '-i', pre, '-af', `${ln},aresample=48000`, '-c:a', 'pcm_s16le', '-ar', '48000', '-ac', '2', out]);
-  await fsp.rm(pre, { force: true });
+  if (!keepPremix) await fsp.rm(pre, { force: true });
   const after = await measureLoudness(out, I, TP);
-  return { duration: T, lufs: +after.input_i, true_peak: +after.input_tp, tracks: mixIn.length };
+  // gain_db: what mastering added; stems carry it, so they sum to (about) the mix.
+  return { duration: T, lufs: +after.input_i, true_peak: +after.input_tp, tracks: mixIn.length, gain_db: +after.input_i - +m.input_i };
+}
+
+// The music bed: level, trim, fades and (under narration) sidechain ducking keyed by [vo0].
+// Returns the filter chains, the voice label to mix and the bed's output label.
+function musicChains(music, idx, T, hasVoice, fmt) {
+  const vol = music.volume ?? (hasVoice ? 0.12 : 0.9);
+  const fadeOut = Math.max(0, T - (music.fade_out ?? 2.5));
+  const chains = [`[${idx}:a]${fmt},atrim=0:${T},volume=${vol},afade=t=in:d=${music.fade_in ?? 1.5},afade=t=out:st=${fadeOut}:d=${music.fade_out ?? 2.5}[bg0]`];
+  if (hasVoice && music.duck !== false) {
+    chains.push('[vo0]asplit=2[vo][vokey]');
+    chains.push('[bg0][vokey]sidechaincompress=threshold=0.03:ratio=8:attack=200:release=400[bg]');
+    return { chains, voice: '[vo]', out: '[bg]' };
+  }
+  return { chains, voice: '[vo0]', out: '[bg0]' };
+}
+
+/**
+ * The edit package's audio stems (layout 2): edit/audio/voice/<scene>.wav, music.wav (the ducked
+ * bed, full length), sfx/<nn>-<name>.wav (gain baked in), each 48 kHz 32-bit float stereo and
+ * carrying the mastering gain, plus edit/audio/stems.json with where each one sits. The timeline
+ * (timeline.mjs) places them on A1–A3. A stem is re-encoded only when its inputs change.
+ *   voice: [{ id, wav, at, duration }]  ·  sfx: sfxCues().cues  ·  gainDb: buildMix().gain_db
+ */
+export async function writeStems({ dir, sb, P, voice, voiceFile, music, sfx, gainDb }) {
+  const T = timelineTotal(sb);
+  const fmt = 'aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo';
+  const g = `volume=${(+gainDb || 0).toFixed(3)}dB`;
+  // 32-bit float: the mastering gain can push a stem past 0 dBFS, which float carries without
+  // clipping (every target editor reads float WAV).
+  const enc = ['-c:a', 'pcm_f32le', '-ar', '48000', '-ac', '2'];
+  const prev = (() => { try { return JSON.parse(fs.readFileSync(path.join(P.editAudio, 'stems.json'), 'utf8')); } catch { return {}; } })();
+  const seen = new Map([...(prev.voice || []), ...(prev.sfx || []), ...(prev.music ? [prev.music] : [])].map((s) => [s.file, s.key]));
+  const stat = (f) => { try { const s = fs.statSync(f); return `${s.size}:${s.mtimeMs}`; } catch { return ''; } };
+  const keyOf = (...x) => JSON.stringify(['f32', ...x]);
+  const out = { sample_rate: 48000, duration: T, gain_db: +(+gainDb || 0).toFixed(3), voice: [], music: null, sfx: [], mix: path.relative(P.edit, P.mix) };
+  const produce = async (file, key, argv) => {
+    const rel = path.relative(P.edit, file);
+    if (seen.get(rel) !== key || !fs.existsSync(file)) {
+      await fsp.mkdir(path.dirname(file), { recursive: true });
+      await run('ffmpeg', ['-y', '-v', 'error', ...argv, ...enc, file + '.part.wav']);
+      await fsp.rename(file + '.part.wav', file);
+    }
+    return rel;
+  };
+  for (const v of voice) {
+    const file = path.join(P.editVoice, `${v.id}.wav`), key = keyOf(v.wav, stat(v.wav), gainDb);
+    out.voice.push({ id: v.id, file: await produce(file, key, ['-i', v.wav, '-af', `${fmt},${g}`]), at: v.at, duration: v.duration, key });
+  }
+  if (music?.src) {
+    const src = path.resolve(dir, music.src), file = P.editMusic;
+    const key = keyOf(src, stat(src), music, T, gainDb, voiceFile && stat(voiceFile));
+    const inputs = [...(voiceFile ? ['-i', voiceFile] : []), '-stream_loop', '-1', '-i', src];
+    const bed = musicChains(music, voiceFile ? 1 : 0, T, !!voiceFile, fmt);
+    const graph = [...(voiceFile ? [`[0:a]${fmt},apad,atrim=0:${T}[vo0]`] : []), ...bed.chains, ...(voiceFile ? [`${bed.voice}anullsink`] : []), `${bed.out}${g},apad,atrim=0:${T}[m]`].join(';');
+    out.music = { file: await produce(file, key, [...inputs, '-filter_complex', graph, '-map', '[m]']), at: 0, duration: T, key };
+  }
+  for (const [k, c] of sfx.entries()) {
+    const name = `${String(k + 1).padStart(2, '0')}-${String(c.name).toLowerCase().replace(/\.[a-z0-9]+$/, '').replace(/[^a-z0-9]+/g, '-')}.wav`;
+    const file = path.join(P.editSfx, name), key = keyOf(c.src, stat(c.src), c.volume, gainDb);
+    const d = +(await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', c.src])).out.trim();
+    out.sfx.push({ scene: c.scene, name: c.name, file: await produce(file, key, ['-i', c.src, '-af', `${fmt},volume=${c.volume},${g}`]), at: c.at, duration: +d.toFixed(3), key });
+  }
+  // Latest only: drop stems that are no longer produced.
+  const keep = new Set([...out.voice, ...out.sfx, ...(out.music ? [out.music] : [])].map((s) => path.resolve(P.edit, s.file)));
+  for (const d of [P.editVoice, P.editSfx]) {
+    if (!fs.existsSync(d)) continue;
+    for (const f of fs.readdirSync(d)) if (!keep.has(path.resolve(d, f))) await fsp.rm(path.join(d, f), { force: true });
+  }
+  if (!out.music) await fsp.rm(P.editMusic, { force: true });
+  await fsp.writeFile(path.join(P.editAudio, 'stems.json'), JSON.stringify(out, null, 2) + '\n');
+  return out;
 }

@@ -15,13 +15,16 @@
 //    audio/timing.json and, when audio.captions.enabled, audio/captions.{json,srt,vtt}.
 // 4. Mix audio/mix.wav: voice + optional music bed (ducked) + scene.sfx cues, mastered with
 //    two-pass loudnorm. render.mjs uses it automatically; HyperFrames gets it as <audio id="vm-mix">.
+// 5. Layout 2: write the edit package's stems (edit/audio/voice, music.wav, sfx/, stems.json).
+// (Layout-2 locations: .build/voice/ for the cache, voiceover.wav and timing.json; edit/captions/
+//  and edit/audio/mix.wav for the results; see lib/paths.mjs.)
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, fmtTime } from './lib/common.mjs';
 import { syncProject, timelineTotal, sceneTimes } from './lib/hf.mjs';
-import { voSettings, retime, readWav, writeWav, narrationLead, captionGroups, toSRT, toVTT, sfxCues, buildMix, requiredDuration } from './lib/audio.mjs';
+import { voSettings, retime, readWav, writeWav, narrationLead, captionGroups, toSRT, toVTT, sfxCues, buildMix, writeStems, requiredDuration } from './lib/audio.mjs';
 import { synthesize, voiceKey, voiceLabel, engineFor } from './lib/tts.mjs';
 import { projectPaths } from './lib/paths.mjs';
 import { writeReadme } from './lib/readme.mjs';
@@ -117,10 +120,16 @@ if (sb.audio.captions?.enabled && narrated.length) {
 // ---------------------------------------------------------------- 4. mix
 const { cues, problems } = sfxCues(sb, dir);
 for (const p of problems) findings.push({ level: 'error', code: 'SFX', msg: p });
-const m = await buildMix({ dir, sb, voiceFile, music: sb.audio.music, sfx: cues, out: P.mix, premix: P.premix });
+const m = await buildMix({ dir, sb, voiceFile, music: sb.audio.music, sfx: cues, out: P.mix, premix: P.premix, keepPremix: P.layout >= 2 });
 syncProject(dir);
 console.log(`▶ mix: ${m.tracks} track(s), ${cues.length} sfx cue(s), ${fmtTime(m.duration)} → ${P.rel.mix} (${m.lufs.toFixed(1)} LUFS, TP ${m.true_peak.toFixed(1)} dBTP)`);
 if (Math.abs(m.lufs - vo.loudness) > 1.5) findings.push({ level: 'warn', code: 'LOUDNESS', msg: `integrated ${m.lufs.toFixed(1)} LUFS vs target ${vo.loudness}` });
+// Layout 2: stems for the edit package (A1 voice per scene, A2 music, A3 sfx).
+if (P.layout >= 2) {
+  const voice = narrated.map((s) => { const i = sb.scenes.indexOf(s); return { id: s.id, wav: clips[s.id].wav, at: +(times[i].start + narrationLead(sb, i, vo)).toFixed(3), duration: timing.scenes[s.id].duration }; });
+  const st = await writeStems({ dir, sb, P, voice, voiceFile, music: sb.audio.music, sfx: cues, gainDb: m.gain_db });
+  console.log(`▶ stems: ${st.voice.length} voice, ${st.music ? 1 : 0} music, ${st.sfx.length} sfx → ${P.rel.editAudio}/ (48 kHz float, ${st.gain_db >= 0 ? '+' : ''}${st.gain_db.toFixed(1)} dB mastering gain)`);
+}
 if (m.true_peak > vo.true_peak + 0.5) findings.push({ level: 'warn', code: 'TRUE_PEAK', msg: `true peak ${m.true_peak.toFixed(1)} dBTP above ${vo.true_peak}` });
 
 writeReadme(dir, sb);
