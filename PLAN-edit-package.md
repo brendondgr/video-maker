@@ -213,7 +213,7 @@ relative paths.
 to run (Chromium rasterisation), so compare with PSNR — min > 40 dB counts as identical.
 **Commit:** `Centralise project paths in lib/paths.mjs`
 
-#### [ ] A2 · Determinism fixes for isolated rendering
+#### [x] A2 · Determinism fixes for isolated rendering
 **Why:** with isolated renders, a change to one scene must not alter another scene's pixels, and
 clip boundaries must be whole frames.
 **Do:**
@@ -221,9 +221,12 @@ clip boundaries must be whole frames.
    `mulberry32(hashString(spec.id))`, and restore the global seed for overlays. This is a
    **one-time visual change** for scenes whose third-party code uses `Math.random` (d3-force,
    unseeded rough.js); say so in the commit message.
-2. `voiceover.mjs` retime: snap every scene duration and transition duration to `k / fps`.
-   `validate-storyboard.mjs` warns `OFF_FRAME` for hand-written values that don't.
-3. `sceneTimes()` / `timelineTotal()` in `lib/hf.mjs` and `VM.start`: round to frames the same way.
+2. `voiceover.mjs` retime already snaps scene durations up to whole frames (`frameCeil`).
+   `validate-storyboard.mjs` now warns `OFF_FRAME` for hand-written scene or transition
+   durations that aren't whole frames.
+3. The composition's own timing math stays as it is (changing it would shift existing videos).
+   Instead the clip plan (C1) rounds every **boundary** to the nearest frame, so rounding never
+   accumulates.
 
 **Verify:** re-run `voiceover.mjs --no-retime` and then `voiceover.mjs` on web-request. Every
 start and end in `audio/timing.json` × fps is an integer. Change a string in one scene of

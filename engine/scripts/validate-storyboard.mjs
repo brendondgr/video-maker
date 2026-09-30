@@ -68,6 +68,11 @@ export async function validateStoryboard(dir, { planOnly = false } = {}) {
     const d = +s.duration;
     if (!(d > 0)) { add('error', 'DURATION', 'duration must be > 0 seconds', at); return; }
     if (d < minDur) add('warn', 'DURATION', `only ${d}s — too short to register (min ${minDur}s)`, at);
+    // Per-scene clips (render --edit) cut on whole frames; an off-frame value rounds to the nearest one.
+    const fps = +c.fps || 30, off = (x) => Math.abs(x * fps - Math.round(x * fps)) > 0.05;
+    if (off(d)) add('warn', 'OFF_FRAME', `duration ${d}s is not a whole number of frames at ${fps} fps (${(d * fps).toFixed(2)}); use ${(Math.round(d * fps) / fps).toFixed(3)}`, at);
+    const trd = +(s.transition_in?.duration || 0);
+    if (i && off(trd)) add('warn', 'OFF_FRAME', `transition_in.duration ${trd}s is not a whole number of frames at ${fps} fps; use ${(Math.round(trd * fps) / fps).toFixed(3)}`, at);
     if (d > maxDur) add('warn', 'DURATION', `${d}s is long for one scene — split it or make sure something moves the whole time`, at);
     if (!s.purpose) add('warn', 'PURPOSE', 'no purpose — every scene must earn its place (what does the viewer learn here?)', at);
     const vt = s.visual?.type;

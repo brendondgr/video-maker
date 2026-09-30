@@ -232,6 +232,10 @@
       var tl = gsap.timeline({ defaults: tlDefaults });
       var frameFns = [];
       var ctx = makeCtx(spec, sEl, tl, frameFns, sb, canvas, at);
+      // Each scene gets its own Math.random stream, so a scene builds the same whether it is
+      // rendered alone (?solo=) or after any other scenes, and editing one scene never
+      // changes another's randomness.
+      Math.random = mulberry32(hashString('Math.random:' + spec.id));
 
       if (!def) {
         errors.push('no builder registered for storyboard scene "' + spec.id + '"');
@@ -265,6 +269,7 @@
     }
 
     var total = cursor;
+    Math.random = mulberry32(0xC0FFEE);
 
     // Whole-video overlays sit above every scene and run on composition time.
     var overlayRecords = [];
