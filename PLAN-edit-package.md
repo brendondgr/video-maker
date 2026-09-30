@@ -288,10 +288,10 @@ tree in section 2. Both v1 examples still pass `qa.mjs`.
 examples pass `qa.mjs` and render frame-identical to the post-A2 render.
 **Commit:** `Add migrate-layout.mjs and move the examples to layout v2`
 
-#### [ ] B3 · Delivery layout
+#### [x] B3 · Delivery layout
 **Do:** `render.mjs --deliver <dir>` writes `<slug>.mp4` (`<slug>-4k.mp4` for 4K),
-`<slug>.srt`, `<slug>.vtt` and `poster.png`, with no resolution/fps suffixes. `--with-edit` also
-copies `edit/` (or writes `<slug>.otioz` once E3 exists). Update the `SKILL.md` delivery row and
+`<slug>.srt`, `<slug>.vtt` and `poster.png`, with no resolution/fps suffixes; a full render writes
+the same set into `exports/`. `--with-edit` also copies `edit/`. Update the `SKILL.md` delivery row and
 `references/rendering.md`. Also update memory `video-output-prefs` if the naming changes.
 **Verify:** deliver web-request to a scratch folder and list it. The contents match the sentence above.
 **Commit:** `Deliver clean filenames and optionally the edit package`

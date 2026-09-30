@@ -27,7 +27,8 @@ quality, never resolution.**
 | `--format mp4|webm|png` | mp4 | png writes a frame sequence directory |
 | `--codec h264|h265` | h264 | h265 is ~40 % smaller; h264 plays everywhere |
 | audio | `audio/mix.wav` if present | `--audio file [--audio-offset s]` overrides; `--no-audio` renders silent |
-| `--deliver dir` | — | copy the MP4 + `captions.srt/.vtt` + a poster PNG (`meta.poster_t`, default 40 %) to `dir` |
+| `--deliver dir` | — | copy `<slug>.mp4` (or `<slug>-4k.mp4`) + `<slug>.srt/.vtt` + `poster.png` (`meta.poster_t`, default 40 %) to `dir`. Layout-1 projects keep the old `<slug>-WxH-fps` names |
+| `--with-edit` | — | with `--deliver`: also copy the edit package (`edit/`) |
 | `--out path` | `out/<slug>-<W>x<H>-<fps>fps[-draft].mp4` | |
 | `--force` | — | render even if the composition reported errors |
 | `--chrome path` | Playwright's Chromium | or env `VM_CHROME` |

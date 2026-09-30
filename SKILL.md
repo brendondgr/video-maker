@@ -77,7 +77,7 @@ Pin the spec. When something is unstated, use the default below and say you assu
 | Voice | narrated + captioned when `kokoro-tts` is installed | voice `af_heart` or `am_michael`, speed 1.0; silent if the user asks. Breeze (`provider: "breeze"`) only when the user wants their own/a designed voice; it is non-commercial |
 | Look | **chosen for this video** (§ 2b): palette, type and image style from the subject and tone | never a house default; the user's brand or colours win when given |
 | Music | none | an optional bed from a user-supplied file (`audio.music.src`) |
-| Delivery | the user's videos folder if known, else `out/` | pass `render.mjs --deliver <dir>` |
+| Delivery | the user's videos folder if known, else the project's `exports/` | pass `render.mjs --deliver <dir>` (add `--with-edit` for the edit package) |
 
 If the user is present and a choice changes the whole video (audience, length, aspect, tone,
 voice), ask once with AskUserQuestion. If you're working unattended, use the defaults and record
@@ -307,7 +307,8 @@ node "$SKILL_DIR/engine/scripts/render.mjs" videos/<slug> --engine hf --quality 
 - **Use `hf`** for `--format mov|gif`, `--docker` or `--gpu`.
 - **Audio:** `audio/mix.wav` is included automatically on both engines. `--no-audio` renders
   silent; `--audio f` overrides the mix.
-- **`--deliver <dir>`** copies the MP4, its SRT/VTT and a poster frame.
+- **`--deliver <dir>`** copies `<slug>.mp4` (`<slug>-4k.mp4` for 4K), its `.srt`/`.vtt` and
+  `poster.png`. `--with-edit` also copies the edit package (`edit/`).
 
 Gate 5 (`verify-output.mjs`) checks resolution, fps, frame count, audio presence and length, and
 black or frozen stretches. Extract and look at 2–3 frames from the final file. More detail:

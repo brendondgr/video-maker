@@ -39,6 +39,23 @@ const V2 = {
 
 const LAYOUTS = { 1: V1, 2: V2 };
 
+/** The project's file-name slug. */
+export function slugOf(sb, dir) {
+  return (sb?.meta?.slug || sb?.meta?.title || path.basename(dir || '')).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video';
+}
+
+/**
+ * File name of a finished (whole-video) export. Layout 2: `<slug>.mp4`, `<slug>-4k.mp4`, plus
+ * `-<fps>fps` only when it differs from the canvas and `-hf` for the HyperFrames engine.
+ * Layout 1 keeps the old `<slug>-<W>x<H>-<fps>fps` names.
+ */
+export function exportName(sb, dir, { width, height, fps, scale = 1, ext = '.mp4', engine = 'vm' }) {
+  const slug = slugOf(sb, dir);
+  if (layoutOf(sb) < 2) return `${slug}-${width}x${height}-${fps}fps${engine === 'hf' ? '-hf' : ''}${ext}`;
+  const canvasFps = +(sb?.canvas?.fps || 30);
+  return `${slug}${scale === 2 ? '-4k' : ''}${fps !== canvasFps ? `-${fps}fps` : ''}${engine === 'hf' ? '-hf' : ''}${ext}`;
+}
+
 /** Absolute paths for a project (and the same paths relative to it under `.rel`). */
 export function projectPaths(dir, sb) {
   if (!sb) {

@@ -7,6 +7,7 @@
 //                             [--engine vm|hf]   (hf: HyperFrames renderer; also --format mov|gif, --docker, --gpu)
 //                             [--4k]             (2× the canvas, e.g. 3840×2160; default is the canvas size)
 //                             [--deliver ~/Videos/CustomSkill/<slug>]  (copy mp4 + captions + poster there)
+//                             [--with-edit]      (with --deliver: also copy the edit package, edit/)
 //                             [--no-audio]       (ignore audio/mix.wav)
 //
 // Every frame i is produced by window.__vm.seek(i / fps) followed by a screenshot, so
@@ -18,7 +19,7 @@ import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, projectDir, readJSON, serve, launchBrowser, openComposition, which, run, fmtTime } from './lib/common.mjs';
-import { projectPaths } from './lib/paths.mjs';
+import { projectPaths, exportName } from './lib/paths.mjs';
 import { writeReadme } from './lib/readme.mjs';
 
 const QUALITY = {
@@ -80,7 +81,10 @@ async function main() {
     const slug = (sb.meta?.slug || sb.meta?.title || path.basename(dir)).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video';
     const suffix = args.scene ? `-${args.scene}` : (args.from != null || args.to != null) ? `-${t0.toFixed(1)}-${t1.toFixed(1)}` : '';
     const ext = format === 'png' ? '' : '.' + format;
-    const out = path.resolve(args.out || path.join(suffix || args.quality === 'draft' ? P.previews : P.exports, `${slug}${suffix}-${outW}x${outH}-${fps}fps${args.quality === 'draft' ? '-draft' : ''}${ext}`));
+    const preview = !!suffix || args.quality === 'draft';
+    const out = path.resolve(args.out || (preview
+      ? path.join(P.previews, `${slug}${suffix}-${outW}x${outH}-${fps}fps${args.quality === 'draft' ? '-draft' : ''}${ext}`)
+      : path.join(P.exports, exportName(sb, dir, { width: outW, height: outH, fps, scale, ext }))));
     await fsp.mkdir(path.dirname(out), { recursive: true });
 
     const workers = Math.max(1, Math.min(+(args.workers || Math.min(4, Math.max(1, Math.floor(os.cpus().length / 2)))), Math.ceil(total / 15)));
@@ -188,7 +192,10 @@ async function renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format
   const slug = (sb.meta?.slug || path.basename(dir)).toString().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'video';
   const ext = { mp4: '.mp4', webm: '.webm', mov: '.mov', gif: '.gif', png: '' }[format];
   if (ext == null) throw new Error('--format for --engine hf: mp4, webm, mov, gif or png');
-  const out = path.resolve(args.out || path.join(args.quality === 'draft' ? projectPaths(dir, sb).previews : projectPaths(dir, sb).exports, `${slug}-${outW}x${outH}-${fps}fps-hf${args.quality === 'draft' ? '-draft' : ''}${ext}`));
+  const P = projectPaths(dir, sb);
+  const out = path.resolve(args.out || (args.quality === 'draft'
+    ? path.join(P.previews, `${slug}-${outW}x${outH}-${fps}fps-hf-draft${ext}`)
+    : path.join(P.exports, exportName(sb, dir, { width: outW, height: outH, fps, scale, ext, engine: 'hf' }))));
   await fsp.mkdir(path.dirname(out), { recursive: true });
   // HyperFrames renders at the composition size or 4K (landscape-4k / portrait-4k / square-4k).
   const hf4k = scale === 2;
@@ -216,22 +223,35 @@ async function renderWithHyperFrames({ args, dir, sb, canvas, fps, scale, format
   return out;
 }
 
-// --deliver <dir>: copy the finished file plus its sidecars (captions, poster) somewhere the user
-// can find them. Poster = the frame at storyboard meta.poster_t (default: 40 % in).
-async function deliver(out, dir, sb, dest) {
-  const target = path.resolve(dest);
-  await fsp.mkdir(target, { recursive: true });
+// Sidecars of a finished video, written next to it in `target`: <base>.srt/.vtt (players pick
+// them up by name) and a poster frame (layout 2: poster.png; layout 1: <base>-poster.png).
+async function writeSidecars(out, dir, sb, target) {
+  const P = projectPaths(dir, sb);
   const base = path.basename(out).replace(/\.[^.]+$/, '');
   const copies = [[out, path.join(target, path.basename(out))]];
-  for (const ext of ['srt', 'vtt']) {
-    const f = projectPaths(dir, sb).captions[ext];
-    if (fs.existsSync(f)) copies.push([f, path.join(target, `${base}.${ext}`)]);
-  }
-  for (const [a, b] of copies) if (path.resolve(a) !== b) await fsp.copyFile(a, b);
+  for (const ext of ['srt', 'vtt']) if (fs.existsSync(P.captions[ext])) copies.push([P.captions[ext], path.join(target, `${base}.${ext}`)]);
+  for (const [a, b] of copies) if (path.resolve(a) !== path.resolve(b)) await fsp.copyFile(a, b);
   const total = +(await run('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', out])).out.trim();
   const t = sb.meta?.poster_t ?? total * 0.4;
-  await run('ffmpeg', ['-y', '-v', 'error', '-ss', String(t), '-i', out, '-frames:v', '1', path.join(target, `${base}-poster.png`)]);
-  console.log(`✔ delivered to ${target}: ${copies.length} file(s) + poster`);
+  const poster = path.join(target, P.layout >= 2 ? 'poster.png' : `${base}-poster.png`);
+  await run('ffmpeg', ['-y', '-v', 'error', '-ss', String(t), '-i', out, '-frames:v', '1', poster]);
+  return copies.length + 1;
+}
+
+// --deliver <dir>: copy the finished file plus its sidecars (captions, poster) somewhere the user
+// can find them. Poster = the frame at storyboard meta.poster_t (default: 40 % in). --with-edit
+// also copies the edit package (edit/: clips, stems, captions, timeline) for finishing by hand.
+async function deliver(out, dir, sb, dest, { withEdit = false } = {}) {
+  const target = path.resolve(dest);
+  await fsp.mkdir(target, { recursive: true });
+  const n = await writeSidecars(out, dir, sb, target);
+  const P = projectPaths(dir, sb);
+  let extra = '';
+  if (withEdit && fs.existsSync(P.edit)) {
+    await fsp.cp(P.edit, path.join(target, 'edit'), { recursive: true, force: true });
+    extra = ' + edit/ package';
+  }
+  console.log(`✔ delivered to ${target}: ${n} file(s)${extra}`);
 }
 
 main().then(async (out) => {
@@ -239,6 +259,10 @@ main().then(async (out) => {
   if (!out) return;
   const dir = projectDir(args);
   writeReadme(dir);
-  if (!args.deliver || args.format === 'png') return;
-  await deliver(out, dir, await readJSON(path.join(dir, 'storyboard.json')), args.deliver);
+  if (args.format === 'png') return;
+  const sb = await readJSON(path.join(dir, 'storyboard.json'));
+  const P = projectPaths(dir, sb);
+  if (P.layout >= 2 && path.dirname(path.resolve(out)) === P.exports) await writeSidecars(out, dir, sb, P.exports);
+  if (!args.deliver) return;
+  await deliver(out, dir, sb, args.deliver, { withEdit: !!args['with-edit'] });
 }).catch((e) => { console.error('\n✖ render failed:', e.message); process.exit(1); });
