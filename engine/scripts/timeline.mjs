@@ -36,7 +36,7 @@ export function buildTimeline(dir, sb, { absolute = false } = {}) {
   const meta = (x) => ({ 'video-maker': x });
 
   const v1 = plan.scenes.map((s) => ({ at: s.timeline.start, frames: s.source.frames, clip: clip({ name: s.id, url: media(s.file), available: s.media.frames, source: s.source, rate: fps, metadata: meta({ scene_id: s.id, handles_frames: plan.handles }) }) }));
-  const v2 = plan.transitions.map((t) => ({ at: t.timeline.start, frames: t.source.frames, clip: clip({ name: `${t.from} → ${t.to}`, url: media(t.file), available: t.media.frames, source: t.source, rate: fps, metadata: meta({ transition: sb.scenes[t.index].transition_in?.type, from: t.from, to: t.to }) }) }));
+  const v2 = plan.transitions.map((t) => ({ at: t.timeline.start, frames: t.source.frames, clip: clip({ name: `${t.from}__${t.to}`, url: media(t.file), available: t.media.frames, source: t.source, rate: fps, metadata: meta({ transition: sb.scenes[t.index].transition_in?.type, from: t.from, to: t.to }) }) }));
   const v3 = plan.overlay ? [{ at: 0, frames: plan.total, clip: clip({ name: 'captions', url: media(plan.overlay.file), available: plan.total, source: { start: 0, frames: plan.total }, rate: fps, metadata: meta({ overlays: plan.overlay.names }) }) }] : [];
 
   let stems = null;
@@ -46,17 +46,18 @@ export function buildTimeline(dir, sb, { absolute = false } = {}) {
     const frames = Math.max(1, Ffloor(s.duration));
     return { at: F(s.at), frames, clip: clip({ name, url: media(path.join(P.edit, s.file)), available: frames, source: { start: 0, frames }, rate: fps, metadata: meta(extra) }) };
   };
-  const a1 = (stems?.voice || []).map((v) => audioItem(v, v.id, { scene_id: v.id }));
+  // Clip names are unique across tracks: some formats (MLT) use them as ids.
+  const a1 = (stems?.voice || []).map((v) => audioItem(v, `${v.id}-voice`, { scene_id: v.id }));
   const a2 = stems?.music ? [audioItem(stems.music, 'music')] : [];
   // SFX that overlap go to extra lanes (one track holds one clip at a time).
   const lanes = [];
   for (const s of [...(stems?.sfx || [])].sort((a, b) => a.at - b.at)) {
-    const it = audioItem(s, s.name, { scene_id: s.scene });
+    const it = audioItem(s, `sfx-${path.basename(s.file, '.wav')}`, { scene_id: s.scene, sfx: s.name });
     let lane = lanes.find((l) => l.end <= it.at);
     if (!lane) { lane = { items: [], end: 0 }; lanes.push(lane); }
     lane.items.push(it); lane.end = it.at + it.frames;
   }
-  const a4 = fs.existsSync(P.mix) ? [audioItem({ file: path.relative(P.edit, P.mix), at: 0, duration: plan.total / fps }, 'mix (mastered reference)')] : [];
+  const a4 = fs.existsSync(P.mix) ? [audioItem({ file: path.relative(P.edit, P.mix), at: 0, duration: plan.total / fps }, 'mix-reference')] : [];
 
   const tracks = [
     track({ name: 'V1 Scenes', kind: 'Video', items: v1, rate: fps }),

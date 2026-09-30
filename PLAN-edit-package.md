@@ -382,15 +382,15 @@ Follow memory `toolbox-host-exec` for host vs toolbox.
 **Verify:** `doctor.mjs --timeline` is all green. `otiopluginfo` lists the adapters.
 **Commit:** `Add the OTIO converter environment and doctor --timeline`
 
-#### [ ] E3 · `timeline.mjs --to <editor>` with read-back check
+#### [x] E3 · `timeline.mjs --to <editor>` with read-back check
 **Do:**
 1. `engine/timeline/convert.py <in.otio> <adapter> <out>`: convert, then read back where the
    adapter can, and emit JSON comparing tracks, clips, duration (±1 frame) and markers.
 2. `timeline.mjs --to a,b,…` maps editor names to adapters (table in section 3.5), writes
    `edit/<slug>.<ext>` and prints what each format lost. `--list` prints the table.
 3. `--to bundle` writes `.otioz`.
-4. `--to shotcut`: the MLT adapter, or `engine/timeline/mlt_writer.py` (MLT XML: one playlist
-   per track, a `tractor` with the tracks, `qtblend` for V2/V3 alpha).
+4. `--to shotcut`: the MLT adapter, then `convert.py` adds what it leaves out: the canvas
+   profile, `qtblend` transitions so V2/V3 composite with alpha, `mix` transitions for audio.
 5. Absolute-path formats print "written for this machine; re-run on another one".
 
 **Verify:** every `--to` target produces a file. The read-back reports zero unexpected loss.
@@ -449,7 +449,7 @@ only hits v1-compatibility notes.
 | Kdenlive | | `.otio` | | | | | | |
 | Premiere Pro | | `.otio` / `.xml` | | | | | | |
 | Final Cut Pro | | `.fcpxml` | | | | | | |
-| Shotcut | | `.mlt` | | | | | | |
+| Shotcut (MLT 7.40 `melt`, its engine) | 7.40 | `.mlt` | ✔ | ✔ | not carried | ✔ (qtblend) | ✔ (mix) | rendered headless with `melt-7` from another folder: relative media resolved, V1–V3 layered, 1920×1080 after the profile fix |
 | OpenShot | | `.xml` | | | | | | |
 | Lightworks | | `.xml` | | | | | | |
 
