@@ -372,11 +372,11 @@ dependency-free writer):
 import into Resolve or Kdenlive ≥ 25.04 → clips line up, markers show, A4 is muted.
 **Commit:** `Write the edit package timeline as OpenTimelineIO`
 
-#### [ ] E2 · Converter environment
-**Do:** `engine/timeline/setup.sh` and `setup.ps1` create `~/venvs/otio` and install
-`engine/timeline/requirements.txt`, which pins `opentimelineio` and `OpenTimelineIO-Plugins`
-(FCP7 XML, FCPXML, CMX 3600, AAF adapters) plus an MLT adapter, if a maintained one exists;
-otherwise E3 ships its own writer. Record the environment in
+#### [x] E2 · Converter environment
+**Do:** `engine/timeline/setup.sh` and `setup.ps1` create `~/venvs/otio` (Python 3.12 via uv)
+and install `engine/timeline/requirements.txt`, which pins `opentimelineio` 0.18.1,
+`OpenTimelineIO-Plugins` (FCP7 XML, CMX 3600 EDL, AAF), `otio-fcpx-xml-adapter` (Final Cut),
+`otio-mlt-adapter` (Shotcut, write-only) and `otio-kdenlive-adapter` (Kdenlive < 25.04). Record the environment in
 `~/.config/video-maker/timeline.json` (python path + adapter versions). `doctor.mjs --timeline` checks it.
 Follow memory `toolbox-host-exec` for host vs toolbox.
 **Verify:** `doctor.mjs --timeline` is all green. `otiopluginfo` lists the adapters.

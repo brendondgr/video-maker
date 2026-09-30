@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 // Check that everything the engine needs is installed, and say how to fix what is not.
 //   node doctor.mjs [--tts]     --tts also runs `kokoro-tts --check` / `breeze-tts --check` (loads each model)
+//   node doctor.mjs --timeline  also checks the timeline converters (timeline.mjs --to) load
 // ✖ = required and missing · ▲ = optional feature unavailable (HyperFrames engine, narration)
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { ENGINE_DIR, SKILL_DIR, which, launchBrowser, parseArgs } from './lib/common.mjs';
 import { HF_BIN, HF_VERSION } from './lib/hf.mjs';
+import { otioEnv, OTIO_SETUP } from './lib/otioenv.mjs';
 const args = parseArgs();
 let ok = true;
 const line = (good, what, fix) => { console.log(`${good ? '✔' : '✖'} ${what}${!good && fix ? `\n    fix: ${fix}` : ''}`); if (!good) ok = false; };
@@ -53,6 +55,18 @@ opt(!!(await which('espeak-ng')), 'espeak-ng (Kokoro fallback for unknown words)
   const url = (process.env.LOCALTTS_URL || 'http://127.0.0.1:5040').replace(/\/+$/, '');
   let up = false; try { const r = await fetch(`${url}/health`, { signal: AbortSignal.timeout(1500) }); up = r.ok; } catch { /* down */ }
   opt(up, `LocalTTS reachable at ${url} (provider "localtts")`, 'optional app: an always-on TTS API + web UI (`localtts start`, or set LOCALTTS_URL)');
+}
+// Optional: timeline converters for other editors (timeline.mjs --to; the .otio itself needs nothing).
+{
+  const env = otioEnv();
+  let detail = '';
+  if (env.found && args.timeline) {
+    const r = spawnSync(env.python, ['-c', 'import opentimelineio as o; m={a.name for a in o.plugins.ActiveManifest().adapters}; print(o.__version__, ",".join(n for n in ["fcp_xml","fcpx_xml","mlt_xml","kdenlive","cmx_3600","AAF","otioz"] if n in m))'], { encoding: 'utf8' });
+    const [ver, ads] = (r.stdout || '').trim().split(' ');
+    opt(r.status === 0, `opentimelineio ${ver || '?'} loads (adapters: ${ads || 'none'})`, `${OTIO_SETUP}   (re-run to repair)`);
+    for (const need of ['fcp_xml', 'fcpx_xml', 'mlt_xml', 'cmx_3600', 'AAF']) if (r.status === 0 && !(ads || '').split(',').includes(need)) opt(false, `adapter ${need}`, OTIO_SETUP);
+  } else detail = env.found ? ` (${env.python}; --timeline to test it)` : '';
+  opt(env.found, `timeline converters for Final Cut / Shotcut / OpenShot / Lightworks / Avid / EDL${detail}`, OTIO_SETUP);
 }
 if (args.tts) {
   for (const e of engines.filter((x) => x.found)) {

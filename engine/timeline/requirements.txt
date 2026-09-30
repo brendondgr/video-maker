@@ -1,0 +1,12 @@
+# Timeline converters for timeline.mjs --to (engine/timeline/convert.py).
+# Installed into their own environment by setup.sh / setup.ps1; pinned so conversions don't
+# change underneath a project.
+opentimelineio==0.18.1
+# FCP7 XML (Premiere legacy, OpenShot, Lightworks, Resolve), CMX 3600 EDL, AAF (Avid)
+OpenTimelineIO-Plugins==0.18.1
+# Final Cut Pro (.fcpxml)
+otio-fcpx-xml-adapter==1.0.0
+# Shotcut (.mlt, write-only)
+otio-mlt-adapter==0.3.0
+# Kdenlive before 25.04 (.kdenlive; newer Kdenlive opens .otio directly)
+otio-kdenlive-adapter==0.0.3
