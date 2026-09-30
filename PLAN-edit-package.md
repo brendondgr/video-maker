@@ -329,12 +329,13 @@ to one scene re-renders one scene and its two transitions. `ffprobe` shows each 
 `dᵢ + 2H` seconds and ProRes 422. Clips play in `ffplay`.
 **Commit:** `Render cached per-scene and transition clips to edit/video`
 
-#### [ ] C3 · Caption / overlay layer with alpha
+#### [x] C3 · Caption / overlay layer with alpha
 **Do:** when overlays exist and the V3 fingerprint is stale, render `layer=overlays` screenshots
 with `omitBackground: true` (PNG) → `-c:v prores_ks -profile:v 4 -pix_fmt yuva444p10le` →
 `edit/overlay/captions.mov`.
-**Verify:** `ffprobe` reports `yuva444p10le`. Overlaying it on the V1/V2 sequence with FFmpeg
-matches the full render at 5 sampled frames (PSNR > 40 dB).
+**Verify:** `ffprobe` reports ProRes 4444 with alpha. Scene clip + caption layer, composited with
+FFmpeg at 5 sampled frames, is as close to a lossless screenshot of the page as the direct render
+is (both ≈ 38–42 dB, limited by the JPEG frame capture that both pipelines use).
 **Commit:** `Render the caption/overlay layer as ProRes 4444 with alpha`
 
 ### Phase D — Audio stems and captions

@@ -73,7 +73,7 @@ export async function renderEditClips(dir, sb, args = {}) {
   const capture = CAPTURE[args.quality || 'standard'] || CAPTURE.standard;
   const { plan, items, manifest } = planStatus(sb, dir, { fps, handles: e.handles, codec: e.codec, scale });
   const only = args.only ? new Set(String(args.only).split(',')) : null;
-  const todo = items.filter((it) => it.kind !== 'overlay' && (args.force || it.stale) && (!only || only.has(it.id) || only.has(it.from) || only.has(it.to)));
+  const todo = items.filter((it) => (args.force || it.stale) && (!only || only.has(it.id) || only.has(it.from) || only.has(it.to)));
 
   // Latest only: drop clips (and manifest rows) that the plan no longer has.
   const keep = new Set(items.map((it) => path.resolve(it.file)));
