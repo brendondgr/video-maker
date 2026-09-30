@@ -5,15 +5,15 @@ work can be resumed, reviewed or redirected.
 
 | Phase | Output | Gate |
 |---|---|---|
-| 1 Intake | mode + spec (in `brief.md`) | — |
-| 2 Digest | `brief.md` evidence bank | you can cite a source for every on-screen fact |
-| 3 Narrative | arc + key messages (in `brief.md`) | fits the length budget |
+| 1 Intake | mode + spec (in `docs/brief.md`) | — |
+| 2 Digest | `docs/brief.md` evidence bank | you can cite a source for every on-screen fact |
+| 3 Narrative | arc + key messages (in `docs/brief.md`) | fits the length budget |
 | 4 Storyboard | `storyboard.json` | `validate-storyboard.mjs --plan-only`; user checkpoint |
 | 5 Design | `storyboard.style`, `style.css`, `design.md` (preset) | contrast/legibility (gates 3, 3b) |
 | 6 Build | `scenes/*.js`, `lib/*.js`, `assets/` | lint + preview |
 | 7 Voice | `audio/` (clips, timing, captions, mix), retimed `storyboard.json` | `voiceover.mjs` 0 errors; timing read |
-| 8 QA | `qa/report.md`, contact sheets | `qa.mjs` passes (gates 1–4, 3b) + visual rubric |
-| 9 Render | `out/*.mp4` | `verify-output.mjs` |
+| 8 QA | `.build/qa/report.md`, contact sheets | `qa.mjs` passes (gates 1–4, 3b, 3c) + visual rubric |
+| 9 Render | `exports/<slug>.mp4` + the edit package in `edit/` | `verify-output.mjs` |
 | 10 Deliver | file + captions + poster + note (`--deliver`) | — |
 
 ---
@@ -43,7 +43,7 @@ propose the smallest fix rather than silently changing it.
 6. **Must-include / must-avoid** — figures, claims, logos, names.
 
 If the user is away or the session is scheduled: do not block. Use defaults, write them under
-"Assumptions made" in `brief.md`, and repeat them in the hand-off.
+"Assumptions made" in `docs/brief.md`, and repeat them in the hand-off.
 
 ## 2 · Digest the sources (open mode especially)
 
@@ -143,7 +143,7 @@ illustration **style key** in `storyboard.images.style` using the same palette
 
 Add each generated illustration the storyboard needs to `storyboard.images.items`, then run
 `images.mjs` in the background as soon as the storyboard is written. Look at
-`qa/images-contact-sheet.png` before building the scenes that use the images (`images.md`).
+`.build/qa/images-contact-sheet.png` before building the scenes that use the images (`images.md`).
 
 ## 6 · Build
 
@@ -163,6 +163,6 @@ Add each generated illustration the storyboard needs to `storyboard.images.items
 ## 7 · Voice → 8 · QA → 9 · Render → 10 · Deliver
 
 Covered in `voiceover.md`, `validation.md` (+ `visual-playbook.md` § 8) and `rendering.md`. After the voice
-pass, re-run `plan.mjs` so `PLAN.md` / `SCRIPT.md` carry the final timecodes, and ship them with the video. The deliverable note should include: file(s) and
+pass, re-run `plan.mjs` so `docs/PLAN.md` / `docs/SCRIPT.md` carry the final timecodes, and ship them with the video. The deliverable note should include: file(s) and
 where they are, duration/resolution/fps, the scene list, assumptions, illustrative content, and
 accepted warnings.

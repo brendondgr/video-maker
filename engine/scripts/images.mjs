@@ -15,7 +15,7 @@
 // assets/img/<name>.jpg, large enough to cover the canvas (Lanczos, q≈90). Items whose prompt,
 // style, backend, model, size and seed are unchanged since the last run are skipped
 // (assets/img/images.lock.json), so editing one prompt regenerates one image.
-// It finishes by writing qa/images-contact-sheet.png: every image with the canvas-aspect crop
+// It finishes by writing .build/qa/images-contact-sheet.png (layout 1: qa/): every image with the canvas-aspect crop
 // drawn on it. LOOK at that sheet before using the images.
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';

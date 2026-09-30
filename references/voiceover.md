@@ -10,13 +10,13 @@ node engine/scripts/voiceover.mjs <project> [--force] [--no-retime] [--mix-only]
 
 | Step | Output | Notes |
 |---|---|---|
-| 1 Synthesize | `audio/vo/<scene>-<hash>.wav` + `.json` word timings | Through `audio.voiceover.provider` (below): `kokoro-tts --batch` by default. Cached by text + every voice setting, so editing one line re-synthesizes one clip. Env `VM_TTS` / `VM_BREEZE_TTS` swap the commands. |
+| 1 Synthesize | `.build/voice/cache/<scene>-<hash>.wav` + `.json` word timings | Through `audio.voiceover.provider` (below): `kokoro-tts --batch` by default. Cached by text + every voice setting, so editing one line re-synthesizes one clip. Env `VM_TTS` / `VM_BREEZE_TTS` swap the commands. |
 | 2 Retime | `storyboard.json` rewritten | Each scene's `duration` = what its narration needs (below). Beats with `cue` snap to their word; other beats scale. The first run stores the silent plan in `scene.silent`, so later runs start from it. |
-| 3 Assemble | `audio/voiceover.wav`, `audio/timing.json` | Clips are placed at scene start + that scene's transition + `pad_before`. |
-| 4 Captions | `audio/captions.{json,srt,vtt}` | Only when `audio.captions.enabled`. |
-| 5 Mix | `audio/mix.wav` (48 kHz stereo) | Voice + optional music bed (sidechain-ducked under the voice) + `sfx` cues, with two-pass loudnorm to −16 LUFS integrated, −1.5 dBTP. |
+| 3 Assemble | `.build/voice/voiceover.wav`, `.build/voice/timing.json` | Clips are placed at scene start + that scene's transition + `pad_before`. |
+| 4 Captions | `edit/captions/captions.{json,srt,vtt}` | Only when `audio.captions.enabled`. |
+| 5 Mix | `edit/audio/mix.wav` (48 kHz stereo) | Voice + optional music bed (sidechain-ducked under the voice) + `sfx` cues, with two-pass loudnorm to −16 LUFS integrated, −1.5 dBTP. |
 
-`render.mjs` uses `audio/mix.wav` automatically. HyperFrames receives it as `<audio id="vm-mix">`
+`render.mjs` uses `edit/audio/mix.wav` automatically. HyperFrames receives it as `<audio id="vm-mix">`
 in `index.html`, so both engines and Studio play the same sound. **Re-run `voiceover.mjs` after
 any narration, voice, duration or transition change.** Gate 1 warns when the mix is older than
 the storyboard.
@@ -179,7 +179,7 @@ The captions overlay (`engine/runtime/helpers/captions.js`) follows HyperFrames'
 - **Caption zone:** the bottom ~16 % of the frame. Keep scene text out of it, or set
   `"captions": false` on the scene.
 
-`audio/captions.srt` / `.vtt` ship next to the MP4 (`render.mjs --deliver`) for players and
+`edit/captions/captions.srt` / `.vtt` ship next to the MP4 (`render.mjs --deliver`) for players and
 platforms that prefer sidecar subtitles.
 
 ## Sound effects
@@ -226,4 +226,4 @@ Always state in the hand-off where the music came from and under which licence.
 | A beat cue "not found in narration; scaled instead" | The phrase differs from the spoken text (typo, number spelled differently); cue a word that is in the line |
 | Voice sounds rushed or flat | `speed` 0.95; split long sentences; add commas where a breath belongs |
 | Captions overlap a label | Move the label above the caption zone, or `"captions": false` for that scene |
-| Mix loudness warning | Very short or very quiet narration; check `audio/mix.wav`; the gate allows ±1.5 LU |
+| Mix loudness warning | Very short or very quiet narration; check `edit/audio/mix.wav`; the gate allows ±1.5 LU |

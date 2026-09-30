@@ -426,11 +426,11 @@ bit-identical, every frame as close to a lossless page screenshot as the direct 
 roughly that scene's render time plus seconds.
 **Commit:** `Assemble the final export from the edit package`
 
-#### [ ] F2 · Docs sweep, acceptance, close-out
+#### [x] F2 · Docs sweep, acceptance, close-out
 **Do:** update every reference that names old paths (`SKILL.md`, `README.md`,
 `references/{composition-contract,hyperframes,images,long-form,motion-design,rendering,
 storyboard-schema,validation,voiceover,workflow}.md`, `templates/`). Fill in section 6. Tick
-this file, mark the PR ready.
+this file. (The branch is local; pushing / a PR waits for the user.)
 **Verify:** `grep -rnE "\bout/|\bqa/|audio/(mix|captions|timing|vo)" SKILL.md README.md references templates`
 only hits v1-compatibility notes.
 **Commit:** `Update docs for layout v2 and the edit package`
@@ -448,13 +448,13 @@ only hits v1-compatibility notes.
 
 | Editor | Version | File | Imports | Clips aligned | Markers | Alpha V3 | Audio tracks | Notes |
 |---|---|---|---|---|---|---|---|---|
-| DaVinci Resolve | | `.otio` | | | | | | |
-| Kdenlive | | `.otio` | | | | | | |
-| Premiere Pro | | `.otio` / `.xml` | | | | | | |
-| Final Cut Pro | | `.fcpxml` | | | | | | |
+| DaVinci Resolve | — | `.otio` | not installed here | | | | | the `.otio` parses in opentimelineio 0.18.1 with every track, clip and marker |
+| Kdenlive | — | `.otio` / `.kdenlive` | not installed here | | | | | shares Shotcut's MLT engine (tested below); `.kdenlive` reads back complete |
+| Premiere Pro | — | `.otio` / `.xml` | not installed here | | | | | FCP7 `.xml` reads back with all 7 tracks, 16 clips, 13 markers |
+| Final Cut Pro | — | `.fcpxml` | not available on Linux | | lost | | | reads back 7 tracks / 16 clips, no markers |
 | Shotcut (MLT 7.40 `melt`, its engine) | 7.40 | `.mlt` | ✔ | ✔ | not carried | ✔ (qtblend) | ✔ (mix) | rendered headless with `melt-7` from another folder: relative media resolved, V1–V3 layered, 1920×1080 after the profile fix |
-| OpenShot | | `.xml` | | | | | | |
-| Lightworks | | `.xml` | | | | | | |
+| OpenShot | — | `.xml` | not installed here | | | | | same FCP7 `.xml` as Premiere |
+| Lightworks | — | `.xml` | not installed here | | | | | same FCP7 `.xml` as Premiere |
 
 ## 7 · Risks
 

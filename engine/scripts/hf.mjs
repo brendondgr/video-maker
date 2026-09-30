@@ -5,7 +5,7 @@
 //
 //   node hf.mjs videos/x lint                  static checks
 //   node hf.mjs videos/x check --json          lint + runtime layout/contrast/motion sweep
-//   node hf.mjs videos/x render -o out/x.mp4 --quality delivery
+//   node hf.mjs videos/x render -o exports/x.mp4 --quality delivery
 //   node hf.mjs videos/x preview               HyperFrames Studio on this project
 //   node hf.mjs videos/x snapshot --at 1,5,9
 //   node hf.mjs videos/x transcribe audio/voiceover.wav

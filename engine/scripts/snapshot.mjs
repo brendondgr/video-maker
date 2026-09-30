@@ -2,7 +2,7 @@
 // Gate 4 — visual review material. Captures stills and builds labelled contact sheets that the
 // agent (and the user) LOOK AT before rendering. Pixels, not code, are the final judge.
 //
-//   node snapshot.mjs <project>                       3 stills per scene + beats → qa/contact-sheet-*.png
+//   node snapshot.mjs <project>                       3 stills per scene + beats → .build/qa/contact-sheet-*.png
 //   node snapshot.mjs <project> --scene hook          only that scene, 6 stills
 //   node snapshot.mjs <project> --times 1.5,4,12.25   exact times (seconds)
 //   node snapshot.mjs <project> --every 2             one still every 2 s

@@ -11,7 +11,7 @@ Two engines render the same composition (parity checked at ≈ 37 dB PSNR):
 | Capture | Playwright, `__vm.seek` + screenshot per frame, N workers | Puppeteer beginFrame capture, parallel workers — ~3× faster |
 | Partial renders | `--scene`, `--from/--to` | whole composition only |
 | Formats | mp4 (h264/h265), webm, png frames | mp4, webm, mov, gif, png-sequence; `--docker` (byte-identical across machines), `--gpu` encode |
-| Audio | muxes `audio/mix.wav` | mixes the page's `<audio id="vm-mix">` (same file) |
+| Audio | muxes `edit/audio/mix.wav` | mixes the page's `<audio id="vm-mix">` (same file) |
 
 **Resolution policy: 1080p (the canvas size) or 4K (`--4k`, exactly 2×). Drafts lower encode
 quality, never resolution.**
@@ -26,11 +26,11 @@ quality, never resolution.**
 | `--scene id` · `--from s --to s` | whole video | partial renders for iteration |
 | `--format mp4|webm|png` | mp4 | png writes a frame sequence directory |
 | `--codec h264|h265` | h264 | h265 is ~40 % smaller; h264 plays everywhere |
-| audio | `audio/mix.wav` if present | `--audio file [--audio-offset s]` overrides; `--no-audio` renders silent |
+| audio | `edit/audio/mix.wav` if present | `--audio file [--audio-offset s]` overrides; `--no-audio` renders silent |
 | `--deliver dir` | — | copy `<slug>.mp4` (or `<slug>-4k.mp4`) + `<slug>.srt/.vtt` + `poster.png` (`meta.poster_t`, default 40 %) to `dir`. Layout-1 projects keep the old `<slug>-WxH-fps` names |
 | `--with-edit` | — | with `--deliver`: also copy the edit package (`edit/`) |
 | `--edit` | — | render only the edit package's stale clips into `edit/` (below) |
-| `--out path` | `out/<slug>-<W>x<H>-<fps>fps[-draft].mp4` | |
+| `--out path` | `exports/<slug>.mp4` (`-4k`); previews and drafts: `.build/previews/<slug>[-scene]-<W>x<H>-<fps>fps[-draft].mp4` | layout 1: `out/` |
 | `--force` | — | render even if the composition reported errors |
 | `--chrome path` | Playwright's Chromium | or env `VM_CHROME` |
 

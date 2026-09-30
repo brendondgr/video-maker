@@ -2,7 +2,7 @@
 
 Automated gates catch mechanical failures; the visual review catches whether the video is any
 good. Both are required. `qa.mjs` runs gates 1–4 (including 3b, HyperFrames' own check, and 3c, scene isolation) and writes
-`qa/report.md`. Gate 5 runs on the rendered file.
+`.build/qa/report.md`. Gate 5 runs on the rendered file.
 
 ## Gate 1 — storyboard (`validate-storyboard.mjs`)
 
@@ -14,7 +14,7 @@ short/long scenes, tight reading density, long transitions, orphan scene files, 
 target, narration too dense when voice-over is enabled.
 Voice (once `voiceover.mjs` has run): `NARRATION_CUT` (error) — a scene is shorter than its
 narration needs (lead + clip + pad + next transition); `VOICE_STALE` — narration not synthesized;
-`MIX` — `audio/mix.wav` missing or older than storyboard.json.
+`MIX` — `edit/audio/mix.wav` missing or older than storyboard.json.
 
 ## Gate 2 — lint (`lint.mjs`)
 
@@ -66,7 +66,7 @@ with `--no-isolation`.
 ## Gate 4 — contact sheets (`snapshot.mjs`)
 
 Stills at ~12/52/92 % of every scene plus each beat, labelled, tiled into
-`qa/contact-sheet-N.png`. **Open every sheet with the Read tool and score it:**
+`.build/qa/contact-sheet-N.png`. **Open every sheet with the Read tool and score it:**
 
 ### Visual review rubric (✓ / ~ / ✗ per scene)
 
@@ -85,7 +85,7 @@ unfinished counters, the caption band).
 8. **Transitions** — mid-transition frames don't show two unrelated texts overlapping illegibly.
 9. **3D/fields** — camera frames the subject; nothing clipped by the frame edge; colours read.
 10. **Captions** — cards sit in the caption zone without covering labels or chart marks; each card is a readable phrase (no orphan words); on-screen text doesn't duplicate the caption word for word.
-11. **Voice sync** (read `audio/timing.json` / the SRT) — cued reveals land on their words; no scene has a long dead tail or starts talking before its transition finishes.
+11. **Voice sync** (read `.build/voice/timing.json` / the SRT) — cued reveals land on their words; no scene has a long dead tail or starts talking before its transition finishes.
 
 Any ✗ → fix and re-run. Inspect a problem closely with `snapshot.mjs <p> --scene <id>` (6 stills)
 or `--times 12.3,12.6`. Record accepted "~" items in the hand-off.

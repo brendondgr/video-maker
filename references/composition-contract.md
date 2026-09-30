@@ -7,18 +7,22 @@ videos/<slug>/
   index.html        boilerplate — import map + fonts.css + vm.css + style.css + boot.js; the
                     HyperFrames root <div id="stage" data-composition-id="main" …> (attributes and
                     the <audio id="vm-mix"> clip are synced from storyboard.json by the scripts)
-  storyboard.json   the plan (see storyboard-schema.md)
-  brief.md          intake + evidence bank
-  design.md         (optional) the applied design preset's spec — composition rules to follow
-  _engine           link to the engine (created by the scripts; git-ignored)
-  audio/            voiceover.mjs output: vo/ clips, timing.json, captions.*, voiceover.wav, mix.wav
+  storyboard.json   the plan (see storyboard-schema.md); meta.layout = 2
   style.css         project classes (sizes in var(--u); no CSS animation)
   scenes/<id>.js    one builder per storyboard scene
   lib/*.js          shared code/data, listed in storyboard.assets.scripts
-  assets/           images, fonts, data, GeoJSON — everything local
-  qa/               reports, stills, contact sheets (generated)
-  out/              renders (generated)
+  _engine           link to the engine (created by the scripts; git-ignored)
+  README.md         generated: the zones, how to open the edit, what exists so far
+  docs/             brief.md (intake + evidence bank), PLAN.md, SCRIPT.md, design.md (a preset's spec)
+  assets/           inputs: images, fonts, music, data, GeoJSON — everything local
+  edit/             the edit package: video/ (clip per scene and transition), overlay/ (captions,
+                    alpha), audio/ (voice per scene, music, sfx, mix.wav), captions/, <slug>.otio
+  exports/          finished videos (<slug>.mp4 + .srt/.vtt + poster.png)
+  .build/           disposable: voice cache + timing.json, qa/, previews/, render manifest
 ```
+
+Paths come from `engine/scripts/lib/paths.mjs`. Older projects (layout 1: `brief.md`, `audio/`,
+`qa/`, `out/` at the root) keep working until `migrate-layout.mjs` converts them.
 
 All engine paths are relative (`./_engine/…`), so the project renders under our server (engine at
 `/_engine/`), HyperFrames' server (through the `_engine` link) or any static server. Projects can
@@ -28,7 +32,7 @@ live anywhere on disk.
 
 `boot.js` loads GSAP (+ SplitText, TextPlugin, DrawSVG, MorphSVG, MotionPath, CustomEase), D3,
 KaTeX, rough.js, the runtime, `transitions.js` and the helpers → `storyboard.assets.scripts` → each
-scene file → `audio/captions.json` (if captions are on) → `VM.start()`: waits for fonts, runs
+scene file → `edit/captions/captions.json` (if captions are on; layout 1: `audio/`) → `VM.start()`: waits for fonts, runs
 every builder **in storyboard order**, pins each scene timeline to its duration, places it on the
 master timeline, applies transitions, builds overlays (captions, `storyboard.overlays`), and
 exposes:
@@ -179,7 +183,7 @@ VM.overlay('progress', { build(ctx, opts) {        // ctx.tl spans the whole vid
 ```
 Enable with `"overlays": ["progress"]` (or `{ "name": "progress", …options }`) in storyboard.json.
 Overlays sit above every scene (z ≥ 1000). The built-in `captions` overlay is enabled by
-`audio.captions.enabled` and fed `audio/captions.json`.
+`audio.captions.enabled` and fed `edit/captions/captions.json`.
 
 ## Transitions
 

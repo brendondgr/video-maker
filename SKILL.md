@@ -173,10 +173,10 @@ node "$SKILL_DIR/engine/scripts/validate-storyboard.mjs" videos/<slug> --plan-on
 Fix every error. Then write the plan and show it:
 
 ```bash
-node "$SKILL_DIR/engine/scripts/plan.mjs" videos/<slug>       # → PLAN.md (overview, assets, scene table, per-scene details) + SCRIPT.md
+node "$SKILL_DIR/engine/scripts/plan.mjs" videos/<slug>       # → docs/PLAN.md (overview, assets, scene table, per-scene details) + docs/SCRIPT.md
 ```
 
-**Checkpoint:** give the user `PLAN.md` and `SCRIPT.md`. Wait for approval if they're present
+**Checkpoint:** give the user `docs/PLAN.md` and `docs/SCRIPT.md`. Wait for approval if they're present
 and the video is over ~60 s or the mode is open, unless they said to proceed without asking. Re-run
 `plan.mjs` after the voice pass so both files carry the final timecodes, and deliver them with the
 video.
@@ -191,13 +191,13 @@ This generates every `storyboard.images` item through the bundled imagegen dispa
 (`imagegen/`). Codex handles complex editorial scenes (3 at a time); local ComfyUI is free and fast
 (one at a time). Each finished image becomes `assets/img/<name>.jpg`, sized to cover the canvas.
 Unchanged prompts are skipped on the next run. When it finishes, **open
-`qa/images-contact-sheet.png`**; the red frames show the canvas crop. Redo bad ones by changing
+`.build/qa/images-contact-sheet.png`**; the red frames show the canvas crop. Redo bad ones by changing
 one prompt axis (`--only <name> --force`). Details: `references/images.md`.
 
 ## 4 · Look check
 
 Before building scenes, check the look against real material. Open
-`qa/images-contact-sheet.png` next to the palette, and preview one built scene. The illustrations
+`.build/qa/images-contact-sheet.png` next to the palette, and preview one built scene. The illustrations
 and the palette should read as one set. If they don't, change one side: `design.mjs --tweak
 --accent …` to pull the palette toward the images, or edit the style key and re-run the images
 that clash. Record the final look in the brief. If storyboarding changed the tone, change the
@@ -268,19 +268,21 @@ This one command does four things:
 - **Retime.** Each scene becomes as long as its narration needs, plus the pads and the next
   transition. Cued beats snap to their words and other beats scale. The silent plan is kept in
   `scene.silent`, so you can re-run.
-- **Caption.** It writes `audio/captions.{json,srt,vtt}`. When `audio.captions.enabled`, the
+- **Caption.** It writes `edit/captions/captions.{json,srt,vtt}`. When `audio.captions.enabled`, the
   captions overlay draws them from these files.
-- **Mix.** It writes `audio/mix.wav`: the voice, an optional ducked music bed and the `sfx` cues,
+- **Mix.** It writes `edit/audio/mix.wav`: the voice, an optional ducked music bed and the `sfx` cues,
   mastered to −16 LUFS / −1.5 dBTP.
+- **Stems.** It also writes the edit package's audio: `edit/audio/voice/<scene>.wav`, `music.wav`
+  and `sfx/*.wav` (48 kHz float, at the mastered level), placed by `stems.json`.
 
 Re-run it after any narration or timing edit. Scene code doesn't change, because it reads
-`ctx.at()`. Read `audio/timing.json` and the SRT to check pacing: a scene with a long silent tail
+`ctx.at()`. Read `.build/voice/timing.json` and the SRT to check pacing: a scene with a long silent tail
 or a rushed line gets rewritten, not padded. Details: `references/voiceover.md`.
 
 ## 7 · Validate: automated gates, then your eyes
 
 ```bash
-node "$SKILL_DIR/engine/scripts/qa.mjs" videos/<slug>      # → qa/report.md + qa/contact-sheet-*.png
+node "$SKILL_DIR/engine/scripts/qa.mjs" videos/<slug>      # → .build/qa/report.md + contact sheets
 ```
 
 | Gate | Checks |

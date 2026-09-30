@@ -35,7 +35,7 @@ node engine/scripts/hf.mjs <project> lint                # static composition ch
 node engine/scripts/hf.mjs <project> check --json        # lint + layout/contrast/motion sweep in Chrome
 node engine/scripts/hf.mjs <project> preview             # HyperFrames Studio (timeline editor)
 node engine/scripts/hf.mjs <project> snapshot --at 2,8,15
-node engine/scripts/hf.mjs <project> transcribe audio/voiceover.wav    # whisper.cpp word timings
+node engine/scripts/hf.mjs <project> transcribe .build/voice/voiceover.wav    # whisper.cpp word timings
 node engine/scripts/hf.mjs <project> remove-background assets/me.mp4 -o assets/me.webm
 node engine/scripts/hf.mjs . catalog --query chart       # browse registry blocks
 node engine/scripts/render.mjs <project> --engine hf     # HyperFrames renderer (fast beginFrame capture)
@@ -54,7 +54,7 @@ node engine/scripts/render.mjs <project> --engine hf     # HyperFrames renderer 
 Pick native mode only when the deliverable really is footage editing or a block assembly. When
 native mode is chosen, scaffold with `node engine/scripts/hf.mjs <dir> init …` (or by hand, per
 `vendor/hyperframes/skills/hyperframes-core/references/minimal-composition.md`). Still write
-`brief.md` first, and still finish with this skill's QA and hand-off steps.
+`docs/brief.md` first, and still finish with this skill's QA and hand-off steps.
 
 ## Using HyperFrames technique in scene mode
 

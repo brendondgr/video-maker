@@ -8,7 +8,7 @@ code.
 
 ```
 storyboard.images ──► images.mjs ──► imagegen.sh (codex | comfy) ──► manifest.json ──► assets/img/<name>.jpg
-  (style key +         (spec per item,   (one job per image,          (the only completion   + qa/images-contact-sheet.png
+  (style key +         (spec per item,   (one job per image,          (the only completion   + .build/qa/images-contact-sheet.png
    one prompt each)     cached by hash)   3 codex / 1 comfy at once)   signal)                (look at it)
 ```
 
@@ -100,7 +100,7 @@ node "$SKILL_DIR/engine/scripts/images.mjs" videos/<slug> --only hero,cells --fo
 
 ## 5 · Review before use (required)
 
-Open `qa/images-contact-sheet.png` with the Read tool. The red frame shows what the canvas will
+Open `.build/qa/images-contact-sheet.png` with the Read tool. The red frame shows what the canvas will
 actually display. For each image check:
 - [ ] the right subject, matching the prompt's nouns;
 - [ ] nothing important outside the red frame;

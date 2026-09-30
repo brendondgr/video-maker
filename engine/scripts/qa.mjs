@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Run gates 1–4 in order and write qa/report.md. Stops early on errors unless --keep-going.
+// Run gates 1–4 in order and write .build/qa/report.md (layout 1: qa/). Stops early on errors unless --keep-going.
 //
 //   node qa.mjs <project> [--keep-going] [--no-snapshot] [--no-determinism] [--samples 3] [--no-hf] [--no-isolation]
 //
