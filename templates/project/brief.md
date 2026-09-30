@@ -22,5 +22,15 @@
 | Item | Value / content | Source | Candidate visual |
 |---|---|---|---|
 
+## Look
+<!-- chosen for THIS video, before the storyboard (SKILL.md § 2b). There is no default look. -->
+- Mood words (3–5):
+- Where the colours come from (the subject's materials, setting, era, field or brand):
+- Light or dark, and why:
+- Palette (bg · ink · accent · accent-2 · accent-3):
+- Type (display + body):
+- Illustration medium and lighting (for the style key):
+- Not this: <!-- what it should avoid looking like, e.g. the generic navy + sky-blue tech look -->
+
 ## Assumptions made
 <!-- anything decided without asking; say so in the hand-off -->

@@ -5,7 +5,7 @@
  *
  * Roles: the recurring actors of a video (agents, components, stakeholders) get one colour and
  * one icon for the whole video. Declare them in storyboard.style.roles:
- *   "roles": { "gen": { "name": "Generation", "color": "#5eb0ff", "icon": "bulb" }, … }
+ *   "roles": { "gen": { "name": "Generation", "color": "#c2562a", "icon": "bulb" }, … }
  * then pass the key ("gen") anywhere a role is accepted, or an inline { label, color, icon }.
  *
  *   const K = VMX.kit;

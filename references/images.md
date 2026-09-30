@@ -20,7 +20,8 @@ List the illustrations while storyboarding, then add them to `storyboard.images`
 "images": {
   "backend": "codex",                 // default for every item (see § 3)
   "size": "landscape",                // landscape | portrait | square | wide | tall | WxH
-  "style": "Style: cinematic editorial illustration with painterly digital shading and subtle film grain. Palette: deep midnight-navy background (#0a0f1c), luminous blue (#5eb0ff) and warm amber (#ffb454) light accents. Soft volumetric light. Keep the main subject away from the top and bottom edges (the frame will be cropped to 16:9). Absolutely no text, letters, numbers, labels, logos or watermarks anywhere in the image.",
+  // built from THIS video's look (storyboard.style.look + palette); this one is for a "Terracotta paper" look
+  "style": "Style: warm editorial gouache illustration with visible paper grain and soft hand-painted edges. Palette: cream paper ground (#f3ede2), fired-clay terracotta (#b4441c) and deep glaze teal (#2f6f62), dark umber shadows. Soft afternoon window light. Keep the main subject away from the top and bottom edges (the frame will be cropped to 16:9). Absolutely no text, letters, numbers, labels, logos or watermarks anywhere in the image.",
   "items": [
     { "name": "hero",    "prompt": "A scientist at a dim lab bench at night, seen from behind, looking up at six glowing orbs of light …" },
     { "name": "library", "prompt": "A lone researcher at the foot of an endless canyon of bookshelves …" },
@@ -44,8 +45,11 @@ Six to fifteen images covers a 3–10 minute video. Reuse images across the vide
 ## 2 · Write prompts that work
 
 Follow `imagegen/reference/prompting.md`. In short:
-- **One style key for the whole video.** It sets the palette (use the video's palette hex
-  values), the medium, the lighting and the exclusions. `images.mjs` appends it to every prompt,
+- **One style key for the whole video, written from its look.** It sets the palette (the
+  video's own palette hex values: Gate 1 warns about hex codes that aren't in the palette), a
+  medium and lighting that match the look's mood (gouache and paper grain for a warm historical
+  look, crisp flat vector for a clinical one, neon-lit 3D for a terminal one), and the exclusions.
+  Don't carry over a style key from another video or from this file's example. `images.mjs` appends it to every prompt,
   and `"style": false` on an item opts out.
 - **Five axes per prompt:** subject (concrete, with its distinguishing details) · composition
   (framing, angle, what's in front and behind) · lighting · medium · constraints.

@@ -61,7 +61,9 @@ node engine/scripts/hf.mjs examples/gradient-descent preview        # HyperFrame
 A narrated project:
 
 ```bash
-node engine/scripts/new-project.mjs videos/demo --title "Demo" --voice am_michael --captions --design blue-professional
+node engine/scripts/new-project.mjs videos/demo --title "Demo" --voice am_michael --captions
+# choose this video's look (no default palette; see references/motion-design.md § Choosing a look):
+node engine/scripts/design.mjs videos/demo --bg "#eef1e6" --accent "#2f7a4a" --look "Botanical" --why "a plant-biology explainer"
 # write brief.md, storyboard.json (with narration) and scenes/*.js, then:
 node engine/scripts/voiceover.mjs videos/demo && node engine/scripts/qa.mjs videos/demo
 node engine/scripts/render.mjs videos/demo --engine hf --quality high --deliver ~/Videos/CustomSkill/demo

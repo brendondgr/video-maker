@@ -8,6 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON, writeJSON, printFindings, ENGINE_DIR, fmtTime, isMain } from './lib/common.mjs';
+import { parseHex, contrastReport } from './lib/color.mjs';
 
 export async function validateStoryboard(dir, { planOnly = false } = {}) {
   const F = [];
@@ -32,6 +33,22 @@ export async function validateStoryboard(dir, { planOnly = false } = {}) {
   }
   if (!(c.fps >= 12 && c.fps <= 120)) add('error', 'CANVAS', 'canvas.fps must be between 12 and 120');
   if (c.safe_area != null && !(c.safe_area >= 0 && c.safe_area <= 0.2)) add('warn', 'CANVAS', 'canvas.safe_area should be between 0 and 0.2');
+
+  // look: every video is art-directed for its own subject; there is no house palette.
+  const style = sb.style || {}, pal = style.palette || {}, look = style.look || {};
+  const missing = ['bg', 'ink', 'accent'].filter((k) => !parseHex(pal[k]));
+  if (missing.length) add('error', 'LOOK', `no look chosen: style.palette lacks ${missing.join(', ')}. Choose one for this video (motion-design.md § Choosing a look; design.mjs)`);
+  else {
+    if (!look.name || !look.why) add('warn', 'LOOK', 'style.look needs a name and a why: the reason this look fits this video (design.mjs --look … --why …)');
+    if (/^#0b0f17$/i.test(pal.bg) && /^#5eb0ff$/i.test(pal.accent) && !look.name)
+      add('warn', 'LOOK', 'palette is the old built-in navy + #5eb0ff. Keep it only if it was chosen for this video; otherwise pick a look');
+    for (const r of contrastReport(pal)) if (!r.ok) add('warn', 'CONTRAST', `--c-${r.token} ${pal[r.token]} is ${r.ratio.toFixed(1)}:1 on bg ${pal.bg} (needs ${r.min}:1)`);
+    const known = new Set(Object.values(pal).concat(Object.values(style.roles || {}).map((r) => r && r.color)).filter(Boolean).map((v) => String(v).toLowerCase()));
+    const stray = [...new Set((sb.images?.style || '').match(/#[0-9a-f]{6}\b/gi) || [])].filter((h) => !known.has(h.toLowerCase()));
+    if (stray.length) add('warn', 'LOOK', `images.style names ${stray.join(', ')}, which are not in this video's palette or roles; illustrations will not match the look`);
+  }
+  if (c.background && parseHex(pal.bg) && c.background.toLowerCase() !== pal.bg.toLowerCase())
+    add('warn', 'LOOK', `canvas.background ${c.background} overrides palette.bg ${pal.bg}; drop it or make them match`);
 
   // scenes
   const scenes = Array.isArray(sb.scenes) ? sb.scenes : [];

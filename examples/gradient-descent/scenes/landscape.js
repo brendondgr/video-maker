@@ -3,7 +3,7 @@ VM.scene('landscape', {
     const d = Loss.domain;
     const field = VMX.field(ctx, {
       fn: (x, y) => Loss.f(x, y), domain: d, res: 160, thresholds: 16,
-      interpolator: (k) => d3.interpolateLab('#10243d', '#5eb0ff')(Math.pow(k, 0.8))
+      interpolator: (k) => d3.interpolateLab(VMX.cssVar('--c-surface'), VMX.cssVar('--c-accent'))(Math.pow(k, 0.8))
     });
     ctx.tl.from(field.canvas.el, { opacity: 0, duration: 0.8 }, ctx.at('field'));
 
@@ -12,7 +12,7 @@ VM.scene('landscape', {
     const trail = VM.svg('path', { d: d3.line()(pts), fill: 'none', stroke: 'var(--c-accent-2)', 'stroke-width': ctx.u * 0.45,
       'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
     const dots = pts.map((p) => VM.svg('circle', { cx: p[0], cy: p[1], r: ctx.u * 0.45, fill: 'var(--c-accent-2)' }, svg));
-    const ball = VM.svg('circle', { r: ctx.u * 1.3, fill: '#fff', stroke: 'var(--c-accent-2)', 'stroke-width': ctx.u * 0.5 }, svg);
+    const ball = VM.svg('circle', { r: ctx.u * 1.3, fill: 'var(--c-bg)', stroke: 'var(--c-accent-2)', 'stroke-width': ctx.u * 0.5 }, svg);
 
     const walk = { i: 0 };
     const walkDur = 3.4;

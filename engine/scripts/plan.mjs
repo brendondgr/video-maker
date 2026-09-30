@@ -58,6 +58,13 @@ md += `| Length | target ${fmt(sb.meta?.target_duration || sb.target_duration)} 
 md += `| Scenes | ${sb.scenes.length}${multi ? ` in ${chapters.length} chapters` : ''} |\n`;
 md += `| Narration | ${totalWords} words${vo.enabled ? ` · voice \`${vo.voice}\` @ ${vo.speed || 1}×` : ' · silent'} · captions: ${sb.audio?.captions?.enabled ? sb.audio.captions.style || 'on' : 'off'} |\n`;
 md += `| Canvas | ${sb.canvas.width}×${sb.canvas.height} @ ${sb.canvas.fps} fps |\n`;
+{
+  const look = sb.style?.look || {}, pal = sb.style?.palette || {};
+  const sw = ['bg', 'surface', 'ink', 'accent', 'accent-2', 'accent-3'].filter((k) => pal[k]).map((k) => `${k} \`${pal[k]}\``).join(' · ');
+  const fonts = [...new Set(['display', 'sans'].map((k) => (sb.style?.fonts?.[k] || '').split(',')[0].replace(/'/g, '').trim()).filter(Boolean))].join(' + ');
+  md += `| Look | ${look.name ? `**${esc(look.name)}**` : '**not chosen**'}${look.mood ? ` (${esc(look.mood)})` : ''}${look.why ? `: ${esc(look.why)}` : ''} |\n`;
+  md += `| Palette | ${sw || '(none)'}${fonts ? ` · type: ${fonts}` : ''} |\n`;
+}
 md += `| Transitions | ${trans.join(', ') || 'cut'} |\n| Visual types | ${Object.entries(vtypes).map(([k, v]) => `${k} ×${v}`).join(', ')} |\n`;
 if (sb.meta?.sources?.length) md += `| Sources | ${esc(sb.meta.sources.join('; '))} |\n`;
 

@@ -9,14 +9,16 @@
     "tone": "calm, precise, a little playful",
     "sources": []
   },
-  "canvas": { "width": 1920, "height": 1080, "fps": 30, "background": "#0b0f17", "safe_area": 0.05 },
+  "canvas": { "width": 1920, "height": 1080, "fps": 30, "background": "#f2efe4", "safe_area": 0.05 },
   "target_duration": 50,
   "style": {
+    "look": { "name": "Survey map", "mood": "calm, outdoorsy, precise", "source": "custom",
+              "why": "gradient descent is walking downhill: topographic paper, terrain green, a trail-red path" },
     "palette": {
-      "bg": "#0b0f17", "surface": "#131a26", "ink": "#eef2f8", "muted": "#93a0b4", "line": "#2a3446",
-      "accent": "#5eb0ff", "accent-2": "#ffb454", "accent-3": "#7ee0a1", "warn": "#ff6b6b"
+      "bg": "#f2efe4", "surface": "#eae7dd", "ink": "#1e2a2c", "muted": "#606563", "line": "#c8c8bf",
+      "accent": "#2e6b4a", "accent-2": "#c4481f", "accent-3": "#8a6100", "warn": "#c8342b"
     },
-    "fonts": { "sans": "'Inter Variable'", "mono": "'JetBrains Mono Variable'", "serif": "'Source Serif 4 Variable'" },
+    "fonts": { "sans": "'Inter Variable'", "display": "'Source Serif 4 Variable', 'Source Serif 4', system-ui, sans-serif", "mono": "'JetBrains Mono Variable'", "serif": "'Source Serif 4 Variable'" },
     "motion": { "ease": "power3.out", "base": 0.7, "exit": 0.45 }
   },
   "audio": { "voiceover": { "enabled": false }, "music": null },

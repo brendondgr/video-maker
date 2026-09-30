@@ -20,19 +20,20 @@ the plan and the build cannot drift apart. Scene code reads its text and beat ti
   "canvas": {
     "width": 1920, "height": 1080,         // design size in CSS px; must be even
     "fps": 30,
-    "background": "#0b0f17",
+    "background": "#f3ede2",               // optional; design.mjs sets it to palette.bg
     "safe_area": 0.05                      // fraction of each edge reserved (title-safe)
   },
   "target_duration": 50,                   // seconds; validator warns if the timeline misses by >10 % (min 2 s).
                                            // voiceover.mjs overwrites it with the fitted length; the requested
                                            // length is kept in meta.target_duration (plan.mjs reports it)
   "style": {
+    "look":    { "name": "Terracotta paper", "mood": "warm, tactile, historical",   // the art direction, chosen per video
+                 "why": "a history of pottery: fired clay, museum labels", "source": "custom" },   // shown in PLAN.md; design.mjs writes it
     "palette": { "bg": "…", "surface": "…", "ink": "…", "muted": "…", "line": "…",
-                 "accent": "…", "accent-2": "…", "accent-3": "…", "warn": "…" },   // → CSS --c-<key>
+                 "accent": "…", "accent-2": "…", "accent-3": "…", "warn": "…" },   // → CSS --c-<key>; bg, ink, accent required (Gate 1)
     "fonts":   { "sans": "'Inter Variable'", "display": "'Space Grotesk'", "mono": "'JetBrains Mono Variable'", "serif": "'Source Serif 4 Variable'" }, // → --f-<key>; display = headings (defaults to sans)
-    "design":  { "source": "…/frame-presets/blue-professional/FRAME.md" }   // written by design.mjs
     "motion":  { "ease": "power3.out", "base": 0.7, "exit": 0.45, "presets": { /* optional overrides */ } },
-    "roles":   { "gen": { "name": "Generation", "color": "#5eb0ff", "icon": "bulb" } }   // recurring actors: one colour + icon each (VMX.kit, visual-playbook.md § 4)
+    "roles":   { "gen": { "name": "Generation", "color": "#2f6f62", "icon": "bulb" } }   // recurring actors: one colour + icon each (VMX.kit, visual-playbook.md § 4)
   },
   "images": {                              // generated illustrations → images.mjs (see images.md)
     "backend": "codex", "size": "landscape",

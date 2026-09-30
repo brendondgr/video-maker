@@ -160,7 +160,7 @@
     var svgEl = o.svg || ctx.svg({ style: 'pointer-events:none' });
     var rc = H.sketch(ctx, svgEl);
     var node = rc.ellipse(box.x + box.w / 2, box.y + box.h / 2, box.w + pad * 2, box.h + pad * 2,
-      { stroke: o.color || H.cssVar('--c-accent-2', '#ffb454'), strokeWidth: o.width || ctx.u * 0.4, roughness: o.roughness || 1.4 });
+      { stroke: o.color || H.cssVar('--c-accent-2', '#b0b0b0'), strokeWidth: o.width || ctx.u * 0.4, roughness: o.roughness || 1.4 });
     svgEl.appendChild(node);
     node.querySelectorAll('path').forEach(function (p) { H.draw(ctx, p, { at: o.at || 0, duration: o.duration || 0.7, ease: 'power1.inOut' }); });
     return node;

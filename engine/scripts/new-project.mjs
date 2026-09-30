@@ -2,7 +2,7 @@
 // Scaffold a new video project from templates/project.
 //   node new-project.mjs <dir> [--title "..."] [--preset 1080p|4k|vertical|square|portrait|cinema]
 //                             [--width W --height H] [--fps 30] [--duration 60] [--mode open|directed] [--force]
-//                             [--voice am_michael] [--captions] [--design blue-professional]
+//                             [--voice am_michael] [--captions] [--design coral]
 //   --voice enables narration (voiceover.mjs), --captions the captions overlay, --design applies a
 //   HyperFrames frame preset via design.mjs (list: node design.mjs --list).
 import fs from 'node:fs';

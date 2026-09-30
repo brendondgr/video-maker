@@ -1,22 +1,30 @@
 #!/usr/bin/env node
-// Apply a HyperFrames design preset (or any frame.md / design.md spec) to a project.
+// Set a video's look: palette + fonts in storyboard.style, and the art direction in style.look.
+// Every video gets its own look, derived from its subject, audience and tone. There is no house
+// palette (references/motion-design.md § Choosing a look).
 //
-//   node design.mjs --list                                   show the vendored presets
-//   node design.mjs <project> --preset blue-professional     map colours + fonts into storyboard.style
-//   node design.mjs <project> --spec path/to/frame.md        same, from your own spec file
-//   options: --no-fonts (skip downloading web fonts) · --dry-run (print the mapping only)
+//   node design.mjs --list                                        presets: light/dark, colours, fonts
+//   node design.mjs <project> --bg "#f3ede2" --accent "#b4441c"    a custom look from its key colours
+//        [--ink --surface --muted --line --accent-2 --accent-3 --warn]   (missing ones are derived)
+//        [--sans "Work Sans" --display "Fraunces" --mono … --serif …]  (any Fontsource family)
+//   node design.mjs <project> --preset coral                      a HyperFrames frame preset
+//   node design.mjs <project> --spec path/to/frame.md             same, from your own spec file
+//   look:    --look "<name>" --mood "<3-5 mood words>" --why "<why this look fits this video>"
+//   --tweak  change only the colours given, keep the rest of the current look
+//   options: --no-fonts (skip downloading web fonts) · --dry-run (print the result only)
 //
-// The spec's YAML frontmatter (see vendor/hyperframes/skills/hyperframes-creative/references/
-// design-spec.md) is mapped onto video-maker tokens: palette bg/surface/ink/muted/line/accent/
-// accent-2/accent-3/warn and fonts sans (body) / display (headings) / mono / serif. Key names differ
-// between presets, so the mapping uses synonyms and prints what it chose. Review it. Web fonts are
-// downloaded once into <project>/assets/fonts/ (Fontsource via jsDelivr) with @font-face rules in
-// style.css, so renders stay offline. The preset's prose is copied to <project>/design.md; read
-// it for composition rules.
+// Custom mode derives the tokens you leave out: ink leans toward the background's hue, surface /
+// line / muted are mixes of bg and ink, missing accents are hue rotations of the main accent.
+// Preset mode maps the spec's YAML frontmatter (hyperframes-creative/references/design-spec.md)
+// onto the tokens by synonym, then derives whatever the preset lacks. Both print the palette
+// with contrast against bg; fix any ✖ before building. Web fonts are downloaded once into
+// <project>/assets/fonts/ (Fontsource via jsDelivr) with @font-face rules in style.css, so renders
+// stay offline. A preset's prose is copied to <project>/design.md; read it for composition rules.
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs, projectDir, readJSON, writeJSON, SKILL_DIR } from './lib/common.mjs';
+import { TOKENS, parseHex, isDark, chroma, completePalette, contrastReport } from './lib/color.mjs';
 
 const PRESETS = path.join(SKILL_DIR, 'vendor', 'hyperframes', 'skills', 'hyperframes-creative', 'frame-presets');
 const BUNDLED = { 'inter': "'Inter Variable'", 'jetbrains mono': "'JetBrains Mono Variable'", 'source serif 4': "'Source Serif 4 Variable'" };
@@ -50,39 +58,83 @@ function frontmatter(md) {
   return out;
 }
 
+function mapSpec(file) {
+  const fm = frontmatter(fs.readFileSync(file, 'utf8'));
+  const colors = fm.colors || {};
+  const palette = {}, used = {};
+  for (const [tok, keys] of Object.entries(SYN)) {
+    const k = keys.find((x) => parseHex(colors[x]) && !Object.values(used).includes(x));
+    if (k) { palette[tok] = colors[k]; used[tok] = k; }
+  }
+  // Presets name their brand colours freely (coral, cobalt, yellow…). Accents nothing matched by
+  // name go to the most colourful remaining colours, so no accent is left to a stale default.
+  const spare = Object.entries(colors).filter(([k, v]) => parseHex(v) && !Object.values(used).includes(k)
+    && !Object.values(palette).includes(v) && chroma(v) > 0.25).sort((a, b) => chroma(b[1]) - chroma(a[1]));
+  for (const tok of ['accent', 'accent-2', 'accent-3']) {
+    if (palette[tok] || !spare.length) continue;
+    const [k, v] = spare.shift(); palette[tok] = v; used[tok] = k;
+  }
+  const typo = fm.typography || {};
+  const fam = (...names) => { for (const n of names) if (typo[n]?.fontFamily) return typo[n].fontFamily; return null; };
+  const families = {
+    sans: fam('body', 'body-lg', 'paragraph', 'text'),
+    display: fam('h1', 'display', 'hero', 'h2', 'headline', 'title'),
+    mono: fam('mono', 'code', 'label', 'counter', 'tag')
+  };
+  if (!families.sans) families.sans = Object.values(typo).map((t) => t?.fontFamily).find(Boolean) || null;
+  return { palette, used, families };
+}
+
 const args = parseArgs();
 if (args.list) {
+  console.log('Starting points only: a look should come from the video (motion-design.md § Choosing a look).\n');
   for (const p of fs.readdirSync(PRESETS).sort()) {
-    const d = /description:\s*>\s*\n([\s\S]*?)\n\S/.exec(fs.readFileSync(path.join(PRESETS, p, 'FRAME.md'), 'utf8'));
-    console.log(`${p.padEnd(18)} ${(d ? d[1].replace(/\s+/g, ' ').trim() : '').slice(0, 110)}`);
+    const { palette: pal, families: f } = mapSpec(path.join(PRESETS, p, 'FRAME.md'));
+    const tone = pal.bg ? (isDark(pal.bg) ? 'dark ' : 'light') : '?    ';
+    const fonts = [...new Set([f.display, f.sans].filter(Boolean))].join(' + ');
+    console.log(`${p.padEnd(18)} ${tone}  bg ${pal.bg || '-'}  accent ${pal.accent || '-'}${pal['accent-2'] ? ' / ' + pal['accent-2'] : ''}  ${fonts}`);
   }
   process.exit(0);
 }
 const dir = projectDir(args);
-const specFile = args.spec ? path.resolve(args.spec) : path.join(PRESETS, String(args.preset || ''), 'FRAME.md');
-if (!fs.existsSync(specFile)) throw new Error(`no spec at ${specFile} (try --list)`);
-const md = await fsp.readFile(specFile, 'utf8');
-const fm = frontmatter(md);
-const colors = fm.colors || {};
-
-const palette = {}, used = {};
-for (const [tok, keys] of Object.entries(SYN)) {
-  const k = keys.find((x) => colors[x] && !Object.values(used).includes(x));
-  if (k) { palette[tok] = colors[k]; used[tok] = k; }
+const custom = TOKENS.filter((t) => args[t] != null);
+let mapped = { palette: {}, used: {}, families: {} }, specFile = null;
+if (args.preset || args.spec) {
+  specFile = args.spec ? path.resolve(args.spec) : path.join(PRESETS, String(args.preset), 'FRAME.md');
+  if (!fs.existsSync(specFile)) throw new Error(`no spec at ${specFile} (try --list)`);
+  mapped = mapSpec(specFile);
+} else if (!custom.length && !args.look && !args.mood && !args.why) {
+  console.error('usage: design.mjs <project> (--bg <hex> --accent <hex> … | --preset <name> | --spec <file>) [--look --mood --why]');
+  process.exit(2);
 }
-const typo = fm.typography || {};
-const fam = (...names) => { for (const n of names) if (typo[n]?.fontFamily) return typo[n].fontFamily; return null; };
-const families = {
-  sans: fam('body', 'body-lg', 'paragraph', 'text'),
-  display: fam('h1', 'display', 'hero', 'h2', 'headline', 'title'),
-  mono: fam('mono', 'code', 'label', 'counter', 'tag')
-};
-if (!families.sans) families.sans = Object.values(typo).map((t) => t?.fontFamily).find(Boolean) || null;
+for (const t of custom) {
+  if (!parseHex(args[t])) throw new Error(`--${t} "${args[t]}" is not a hex colour`);
+  mapped.palette[t] = args[t]; mapped.used[t] = 'flag';
+}
+for (const k of ['sans', 'display', 'mono', 'serif']) if (typeof args[k] === 'string') mapped.families[k] = args[k];
 
-console.log(`▶ ${path.basename(path.dirname(specFile))}: palette`);
-for (const [t, k] of Object.entries(used)) console.log(`   ${t.padEnd(9)} ← ${k.padEnd(14)} ${palette[t]}`);
-for (const t of Object.keys(SYN)) if (!used[t]) console.log(`   ${t.padEnd(9)} (kept current value)`);
-console.log(`  fonts: sans=${families.sans || '-'} display=${families.display || '-'} mono=${families.mono || '-'}`);
+const sbPath = path.join(dir, 'storyboard.json');
+const sb = await readJSON(sbPath);
+sb.style = sb.style || {};
+// A new look replaces the palette: nothing from the previous one leaks in. --tweak changes only the
+// given tokens of the current look. With no colours given, only style.look's text is updated.
+const colourless = !specFile && !custom.length;
+const base = colourless || args.tweak ? Object.assign({}, sb.style.palette || {}, mapped.palette) : { ...mapped.palette };
+if (!parseHex(base.bg) || !parseHex(base.accent)) throw new Error('a look needs at least bg and accent: pass --bg/--accent (a monochrome preset needs --accent alongside --preset)');
+const { palette, derived } = completePalette(base);
+
+console.log(`▶ look${specFile ? ' from ' + path.basename(path.dirname(specFile)) : ''}: ${isDark(palette.bg) ? 'dark' : 'light'} background`);
+const report = Object.fromEntries(contrastReport(palette).map((r) => [r.token, r]));
+for (const t of TOKENS) {
+  const src = mapped.used[t] === 'flag' ? 'given' : mapped.used[t] ? 'preset ' + mapped.used[t] : derived.includes(t) ? 'derived' : 'current look';
+  const c = report[t];
+  const cr = c ? `${c.ok ? '✔' : '✖'} ${c.ratio.toFixed(1)}:1 on bg (min ${c.min})` : '';
+  console.log(`   ${t.padEnd(9)} ${palette[t]}  ${src.padEnd(22)} ${cr}`);
+}
+const fams = mapped.families;
+console.log(`  fonts: ${['sans', 'display', 'mono', 'serif'].map((k) => `${k}=${fams[k] || '(unchanged)'}`).join(' ')}`);
+const bad = Object.values(report).filter((r) => !r.ok);
+if (bad.length) console.log(`  ✖ low contrast: ${bad.map((r) => r.token).join(', ')}. Pass a lighter/darker value for each before building.`);
 if (args['dry-run']) process.exit(0);
 
 // Fonts: bundled ones by name; others downloaded once as variable latin woff2 from Fontsource.
@@ -93,29 +145,42 @@ async function fontStack(name) {
   const key = name.toLowerCase();
   if (BUNDLED[key]) return `${BUNDLED[key]}, '${name}', system-ui, sans-serif`;
   const slug = key.replace(/[^a-z0-9]+/g, '-');
-  const file = path.join(fontsDir, `${slug}-latin-wght.woff2`);
-  if (!fs.existsSync(file) && !args['no-fonts']) {
-    const url = `https://cdn.jsdelivr.net/fontsource/fonts/${slug}:vf@latest/latin-wght-normal.woff2`;
-    const res = await fetch(url);
-    if (!res.ok) { console.warn(`  ! could not fetch ${name} (${res.status}); falling back to Inter`); return null; }
+  // Variable font when Fontsource has one, else the static 400 and 700 cuts that exist.
+  const cuts = [{ file: `${slug}-latin-wght.woff2`, url: `${slug}:vf@latest/latin-wght-normal.woff2`, weight: '100 900' },
+    { file: `${slug}-latin-400.woff2`, url: `${slug}@latest/latin-400-normal.woff2`, weight: '400', static: true },
+    { file: `${slug}-latin-700.woff2`, url: `${slug}@latest/latin-700-normal.woff2`, weight: '700', static: true }];
+  const have = (c) => fs.existsSync(path.join(fontsDir, c.file));
+  async function fetchCut(c) {
+    if (have(c) || args['no-fonts']) return have(c);
+    const res = await fetch('https://cdn.jsdelivr.net/fontsource/fonts/' + c.url);
+    if (!res.ok) return false;
     await fsp.mkdir(fontsDir, { recursive: true });
-    await fsp.writeFile(file, Buffer.from(await res.arrayBuffer()));
-    console.log(`  ↓ ${name} → ${path.relative(dir, file)}`);
+    await fsp.writeFile(path.join(fontsDir, c.file), Buffer.from(await res.arrayBuffer()));
+    console.log(`  ↓ ${name} ${c.weight} → assets/fonts/${c.file}`);
+    return true;
   }
-  if (!fs.existsSync(file)) return null;
-  const rule = `@font-face { font-family: '${name}'; src: url('assets/fonts/${path.basename(file)}') format('woff2'); font-weight: 100 900; font-display: block; }`;
-  if (!fontCss.includes(rule)) fontCss.push(rule);
+  const got = (await fetchCut(cuts[0])) ? [cuts[0]] : [];
+  if (!got.length) for (const c of cuts.slice(1)) if (await fetchCut(c)) got.push(c);
+  if (!got.length) { console.warn(`  ! no Fontsource files for ${name}; falling back to Inter`); return null; }
+  for (const c of got) {
+    const rule = `@font-face { font-family: '${name}'; src: url('assets/fonts/${c.file}') format('woff2'); font-weight: ${c.weight}; font-display: block; }`;
+    if (!fontCss.includes(rule)) fontCss.push(rule);
+  }
   return `'${name}', system-ui, sans-serif`;
 }
 
-const sbPath = path.join(dir, 'storyboard.json');
-const sb = await readJSON(sbPath);
-sb.style = sb.style || {};
-sb.style.palette = Object.assign({}, sb.style.palette || {}, palette);
+sb.style.palette = palette;
 sb.style.fonts = Object.assign({}, sb.style.fonts || {});
-for (const [k, v] of Object.entries(families)) { const st = await fontStack(v); if (st) sb.style.fonts[k] = st; }
-sb.style.design = { source: path.relative(SKILL_DIR, specFile), applied: new Date().toISOString().slice(0, 10) };
-if (palette.bg) { sb.canvas = sb.canvas || {}; sb.canvas.background = palette.bg; }
+for (const [k, v] of Object.entries(fams)) { const st = await fontStack(v); if (st) sb.style.fonts[k] = st; }
+const look = Object.assign({}, sb.style.look || {});
+for (const k of ['look', 'mood', 'why']) if (typeof args[k] === 'string') look[k === 'look' ? 'name' : k] = args[k];
+if (specFile) look.source = path.relative(SKILL_DIR, specFile) + (custom.length ? ' + custom' : '');
+else if (custom.length && !args.tweak) look.source = 'custom';
+look.set = new Date().toISOString().slice(0, 10);
+sb.style.look = look;
+delete sb.style.design;
+sb.canvas = sb.canvas || {};
+sb.canvas.background = palette.bg;
 await writeJSON(sbPath, sb);
 
 if (fontCss.length) {
@@ -125,5 +190,6 @@ if (fontCss.length) {
   css = `/* design fonts:start */\n${fontCss.join('\n')}\n/* design fonts:end */\n` + css;
   await fsp.writeFile(cssPath, css);
 }
-await fsp.copyFile(specFile, path.join(dir, 'design.md'));
-console.log(`✔ style applied to storyboard.json${fontCss.length ? ' + @font-face in style.css' : ''}; spec copied to design.md`);
+if (specFile) await fsp.copyFile(specFile, path.join(dir, 'design.md'));
+console.log(`✔ look written to storyboard.json${fontCss.length ? ' + @font-face in style.css' : ''}${specFile ? '; spec copied to design.md' : ''}`);
+if (!look.name || !look.why) console.log('  ▲ style.look has no name/why yet: add --look "<name>" --why "<why it fits>" (shown in PLAN.md)');

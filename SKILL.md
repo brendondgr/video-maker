@@ -17,8 +17,8 @@ ten vendored HyperFrames skills serve as reference libraries for motion, design,
 
 ```
 brief.md ─► storyboard.json ─► PLAN.md ─► images ─► voiceover ─► scenes/*.js ─► QA gates ─► render ─► verify ─► deliver
- (what/why)  (scenes, narration,  (shown to   (generated  (TTS → retime  (scene kit;     (lint, runtime,  (vm or hf  (file,     (~/Videos/…)
-              beats, visuals,      the user)   illustr.,   → captions/    diagrams built  HF, eyes)        engine)   audio)
+ (what/why/  (scenes, narration,  (shown to   (generated  (TTS → retime  (scene kit;     (lint, runtime,  (vm or hf  (file,     (~/Videos/…)
+  look)       beats, visuals,      the user)   illustr.,   → captions/    diagrams built  HF, eyes)        engine)   audio)
               images, roles)                   background)  mix)          on the words)
 ```
 
@@ -27,6 +27,11 @@ medium. That means SVG diagrams built step by step with each step landing on the
 names it, charts built in reading order, illustrative UI mock-ups, and generated illustrations
 for scenes and metaphors. Frames are filled, never dead, and honest about their data. Apply the
 playbook by default; the user doesn't have to ask.
+
+**What a video looks like is not standardised.** Palette, type and illustration style are
+art-directed per video from its subject, audience and tone (§ 2b). They are decided in the brief,
+shown in PLAN.md and carried through every scene and image. There is no house palette: the
+engine's fallback colours are placeholder greys, and Gate 1 fails a storyboard with no look.
 
 `SKILL_DIR` means the directory containing this file. Scripts take the **project directory** as
 their first argument and live in `$SKILL_DIR/engine/scripts/`.
@@ -70,7 +75,7 @@ Pin the spec. When something is unstated, use the default below and say you assu
 | Resolution | **1080p** (1920×1080) | the only other output is **4K** (`--4k`). Drafts keep full resolution. |
 | Aspect / fps | 16:9 · 30 fps | presets: `1080p 4k vertical square portrait cinema` |
 | Voice | narrated + captioned when `kokoro-tts` is installed | voice `af_heart` or `am_michael`, speed 1.0; silent if the user asks. Breeze (`provider: "breeze"`) only when the user wants their own/a designed voice; it is non-commercial |
-| Style | dark, clean, one accent · or a HyperFrames preset (`design.mjs --list`) | light editorial presets suit papers |
+| Look | **chosen for this video** (§ 2b): palette, type and image style from the subject and tone | never a house default; the user's brand or colours win when given |
 | Music | none | an optional bed from a user-supplied file (`audio.music.src`) |
 | Delivery | the user's videos folder if known, else `out/` | pass `render.mjs --deliver <dir>` |
 
@@ -88,7 +93,7 @@ below.
 
 ```bash
 node "$SKILL_DIR/engine/scripts/new-project.mjs" videos/<slug> --title "<Title>" --duration 60 --mode open \
-     --voice am_michael --captions [--design blue-professional]
+     --voice am_michael --captions
 ```
 
 Fill `brief.md` **before** storyboarding:
@@ -97,12 +102,39 @@ Fill `brief.md` **before** storyboarding:
 - at most 5 key messages;
 - an **evidence bank**: every number, quote, equation, figure and diagram worth showing, each with
   its source (file + page).
+- the **look** (§ 2b): mood words, palette, type, image medium, and why they fit;
 - **Assumptions made**: the look, voice, which values are approximate or illustrative, and which
   mock-ups are illustrative.
 
 In open mode, read every document fully first; the evidence bank is where accuracy is won or
 lost. Never invent data. If a chart needs numbers the sources lack, label it *illustrative* on
 screen.
+
+## 2b · Look: art-direct this video
+
+Decide the look before storyboarding: the scene notes, the role colours and the illustration
+style key all depend on it. Method and example looks: `references/motion-design.md` § Choosing a
+look.
+1. Write 3–5 **mood words** from the subject, audience, tone and placement.
+2. **Find the colours in the subject** (its materials, setting, era, field or brand), and choose
+   light or dark on purpose. Don't reach for the navy + sky-blue reflex look.
+3. Choose **type** that fits the voice (serif for history and editorial, geometric sans for
+   tech, rounded for friendly, mono for code).
+4. Set it:
+
+```bash
+node "$SKILL_DIR/engine/scripts/design.mjs" videos/<slug> --bg "#f3ede2" --accent "#b4441c" --accent-2 "#2f6f62" \
+     --display "Fraunces" --sans "Work Sans" --look "Terracotta paper" --mood "warm, tactile, historical" \
+     --why "a history of pottery: fired clay, museum labels"
+node "$SKILL_DIR/engine/scripts/design.mjs" --list                          # or start from a HyperFrames preset:
+node "$SKILL_DIR/engine/scripts/design.mjs" videos/<slug> --preset <name> --look … --why …
+```
+
+`design.mjs` derives the tokens you leave out (surface, line, muted, missing accents, warn) and
+prints each one with its contrast on the background. Fix every ✖. It downloads web fonts once
+into `assets/fonts/`. A preset also gets its `design.md` copied in, and you should read its
+composition rules. A new look replaces the old palette; `--tweak` changes only the colours
+passed. In directed mode, the user's colours, brand or reference are the look.
 
 ## 3 · Storyboard: narration first
 
@@ -120,7 +152,8 @@ Write `storyboard.json` (schema: `references/storyboard-schema.md`). For each sc
 Also decide the **medium of every scene** (`visual-playbook.md` § 1: diagram, chart, UI mock-up,
 illustration, kinetic type). Write the build order and the cue word of each step into
 `visual.notes`. Declare recurring actors in `style.roles` and the illustrations in
-`storyboard.images` (a shared style key plus one prompt per image, `references/images.md`). For
+`storyboard.images` (a shared style key plus one prompt per image, `references/images.md`). The
+style key's palette and medium come from the look. For
 technical or long videos, write the narration in **speaker style** (`voiceover.md` § Speaker
 style): open on a story, one metaphor per hard concept, a worked example per rule, and the
 limitations at the end.
@@ -155,21 +188,14 @@ Unchanged prompts are skipped on the next run. When it finishes, **open
 `qa/images-contact-sheet.png`**; the red frames show the canvas crop. Redo bad ones by changing
 one prompt axis (`--only <name> --force`). Details: `references/images.md`.
 
-## 4 · Design
+## 4 · Look check
 
-Pick a look before building scenes, so layout is designed against real colours and fonts:
-
-```bash
-node "$SKILL_DIR/engine/scripts/design.mjs" --list                              # 13 HyperFrames frame presets
-node "$SKILL_DIR/engine/scripts/design.mjs" videos/<slug> --preset blue-professional   # palette + fonts → storyboard.style
-```
-
-`design.mjs`:
-- prints the colour mapping it chose; check it;
-- downloads web fonts once into `assets/fonts/`;
-- copies the preset's `design.md`, whose composition rules you should read.
-
-To build a look by hand instead, set `storyboard.style` directly (`references/motion-design.md`).
+Before building scenes, check the look against real material. Open
+`qa/images-contact-sheet.png` next to the palette, and preview one built scene. The illustrations
+and the palette should read as one set. If they don't, change one side: `design.mjs --tweak
+--accent …` to pull the palette toward the images, or edit the style key and re-run the images
+that clash. Record the final look in the brief. If storyboarding changed the tone, change the
+look now, not after the scenes are built.
 
 ## 5 · Build: one file per scene
 
@@ -291,7 +317,7 @@ black or frozen stretches. Extract and look at 2–3 frames from the final file.
 
 Hand over:
 - the final MP4 in the delivery folder, plus the poster and the `.srt`;
-- a short note: length, resolution, voice, the scene list, the assumptions made, anything
+- a short note: length, resolution, voice, the look, the scene list, the assumptions made, anything
   *illustrative*, and any QA warnings you accepted, with why.
 
 Keep the project folder: it is the editable source. Re-running `voiceover.mjs` and `render.mjs`
@@ -309,7 +335,8 @@ Extend it by adding rather than forking.
 - **Whole-video layer** (watermark, progress bar, chapter tag): `VM.overlay('name', { build(ctx,
   opts) })`, enabled with `storyboard.overlays`.
 - **Project-specific code:** `lib/*.js` listed in `storyboard.assets.scripts`.
-- **House style:** a `frame.md` spec applied with `design.mjs --spec`.
+- **A reusable look** (a series, a lab, a brand): a `frame.md` spec applied with `design.mjs --spec`.
+  Reuse it on purpose for that series, not as a default for unrelated videos.
 - **Upgrading HyperFrames:** `sync-hyperframes.mjs --version X`, plus `npm i -E hyperframes@X` in
   `engine/`, then the parity check in `references/hyperframes.md`.
 
@@ -324,7 +351,7 @@ Extend it by adding rather than forking.
 | `references/images.md` | Generated illustrations: planning, style key, prompts, backends, `images.mjs`, review, using images in scenes |
 | `references/long-form.md` | Videos over ~5 min: word budgets, structure, parallel scene builds with sub-agents |
 | `references/visual-catalog.md` | Choosing how to show each idea; HyperFrames blueprints and rules mapped to our helpers and the scene kit |
-| `references/motion-design.md` | Timing, easing, transitions, typography, colour, layout, design presets |
+| `references/motion-design.md` | **Choosing a look** (method + example looks), timing, easing, transitions, typography, colour, layout, design presets |
 | `references/voiceover.md` | Narration, voices, retiming, captions, SFX, music, loudness |
 | `references/validation.md` | Gates, the visual rubric, common failures and fixes |
 | `references/rendering.md` | Engines, render flags, 1080p/4K, delivery, performance, troubleshooting |

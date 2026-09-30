@@ -13,22 +13,16 @@
     "width": 1920,
     "height": 1080,
     "fps": 30,
-    "background": "#0b0f17",
     "safe_area": 0.05
   },
   "target_duration": 12,
   "style": {
-    "palette": {
-      "bg": "#0b0f17",
-      "surface": "#131a26",
-      "ink": "#eef2f8",
-      "muted": "#93a0b4",
-      "line": "#2a3446",
-      "accent": "#5eb0ff",
-      "accent-2": "#ffb454",
-      "accent-3": "#7ee0a1",
-      "warn": "#ff6b6b"
+    "look": {
+      "name": "",
+      "mood": "",
+      "why": ""
     },
+    "palette": {},
     "fonts": {
       "sans": "'Inter Variable'",
       "mono": "'JetBrains Mono Variable'",

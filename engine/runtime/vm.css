@@ -6,16 +6,18 @@
 /* Bundled fonts + KaTeX CSS live in ../fonts.css (linked by index.html) so no path
  * here climbs above the project root — HyperFrames' linter and Studio reject "../". */
 
+/* Placeholder greys, not a house style: every video sets its own palette in storyboard.style
+ * (design.mjs). A render that comes out grey never had a look chosen. */
 :root {
-  --c-bg: #0b0f17;
-  --c-surface: #131a26;
-  --c-ink: #eef2f8;
-  --c-muted: #93a0b4;
-  --c-line: #2a3446;
-  --c-accent: #5eb0ff;
-  --c-accent-2: #ffb454;
-  --c-accent-3: #7ee0a1;
-  --c-warn: #ff6b6b;
+  --c-bg: #151515;
+  --c-surface: #1f1f1f;
+  --c-ink: #f0f0f0;
+  --c-muted: #9a9a9a;
+  --c-line: #3a3a3a;
+  --c-accent: #d6d6d6;
+  --c-accent-2: #b0b0b0;
+  --c-accent-3: #8a8a8a;
+  --c-warn: #e0574c;
   --f-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
   --f-display: var(--f-sans);   /* headings; a design preset may set a separate display face */
   --f-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;

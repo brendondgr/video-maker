@@ -19,6 +19,7 @@
   },
   "target_duration": 29.1,
   "style": {
+    "look": { "name": "Night network", "mood": "nocturnal, glowing, technical", "source": "custom", "why": "a request crossing the internet at night: dark sky, signal-blue packets, amber server light" },
     "palette": {
       "bg": "#0b0f17",
       "surface": "#131a26",

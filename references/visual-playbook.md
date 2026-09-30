@@ -74,6 +74,10 @@ defaults:
 
 ## 4 · Colour and identity
 
+- **The look is chosen for this video** (`motion-design.md` § Choosing a look): its palette
+  comes from the subject, not from a default. Every colour in a scene is a palette token
+  (`var(--c-…)`, `VMX.cssVar`) or a role colour; never a literal hex the look doesn't contain.
+
 - **Roles:** give every recurring actor (agent, component, stakeholder, cell type) one colour
   and one icon for the whole video, in `storyboard.style.roles`. Use them everywhere: headers,
   chips, arrows, bars. Viewers learn the code quickly, and it ties diagrams to illustrations. You

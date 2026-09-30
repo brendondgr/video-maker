@@ -38,7 +38,8 @@ propose the smallest fix rather than silently changing it.
    (Placement often decides aspect and length: social → vertical 15–60 s; talk → 16:9 60–180 s.)
 3. **Length** — hard limit or approximate?
 4. **Aspect / resolution / fps** — only if placement doesn't settle it.
-5. **Style** — brand colours, fonts, light or dark, reference videos.
+5. **Look** — brand colours, fonts, light or dark, reference videos, a mood. If unasked, choose
+   a look that fits the subject (`motion-design.md` § Choosing a look) and state it.
 6. **Must-include / must-avoid** — figures, claims, logos, names.
 
 If the user is away or the session is scheduled: do not block. Use defaults, write them under
@@ -124,8 +125,10 @@ Checkpoint table to show the user:
 
 ## 5 · Design system
 
-Either apply a HyperFrames frame preset (`design.mjs --list`, then `--preset <name>`), which
-fills palette + fonts and copies the preset's `design.md`, or set `storyboard.style` by hand:
+The look is decided with the brief (SKILL.md § 2b), before storyboarding. Build it with
+`design.mjs` from its key colours (`--bg --accent [--accent-2 …] --display --sans --look --mood
+--why`), or from a HyperFrames frame preset (`design.mjs --list`, then `--preset <name>`), which
+fills palette + fonts and copies the preset's `design.md`. You can also set `storyboard.style` by hand:
 palette (bg, surface, ink, muted, line, accent, accent-2, accent-3, warn), fonts (`sans`,
 `display`, `mono`, `serif`; bundled: Inter, JetBrains Mono, Source Serif 4; others as local files
 in `assets/fonts/`), motion (`ease`, `base` duration, `exit` duration). See `motion-design.md`

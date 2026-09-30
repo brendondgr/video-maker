@@ -70,7 +70,7 @@ unfinished counters, the caption band).
 4. **Legibility** — text size comfortable at the delivery size (imagine it on a phone for social); contrast fine.
 5. **Composition** — balanced, aligned, inside the safe area, nothing cramped or colliding, no big accidental voids.
 6. **Motion story** — the 12 % → 52 % → 92 % progression shows a build, not a static card; entrances finished by the settled frame.
-7. **Consistency** — palette, type, and motion vocabulary match the rest of the video.
+7. **Consistency** — palette, type, and motion vocabulary match the rest of the video, and the look matches `style.look` (no stray colours, illustrations in the same palette).
 8. **Transitions** — mid-transition frames don't show two unrelated texts overlapping illegibly.
 9. **3D/fields** — camera frames the subject; nothing clipped by the frame edge; colours read.
 10. **Captions** — cards sit in the caption zone without covering labels or chart marks; each card is a readable phrase (no orphan words); on-screen text doesn't duplicate the caption word for word.

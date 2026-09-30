@@ -5,11 +5,11 @@ VM.scene('surface', {
     const H = (x, y) => Loss.f(x, y) * 0.32;
     const ZS = 1.8 / 3.2;   // plane spans ±3.2 on both axes; the loss domain is ±3.2 × ±1.8
     const surf = VMX.surface(THREE, (x, z) => H(x, z * ZS), { size: 6.4, segments: 110, range: [-0.3, 2.0],
-      colormap: (k) => d3.interpolateLab('#10243d', '#5eb0ff')(k) });
+      colormap: (k) => d3.interpolateLab(VMX.cssVar('--c-surface'), VMX.cssVar('--c-accent'))(k) });
     surf.mesh.scale.set(1, 1, ZS);          // squash z so the mesh is 6.4 × 3.6 like the domain
     s.scene.add(surf.mesh);
 
-    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.13, 32, 16), new THREE.MeshStandardMaterial({ color: 0xffb454, emissive: 0x442200 }));
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.13, 32, 16), new THREE.MeshStandardMaterial({ color: new THREE.Color(VMX.cssVar('--c-accent-2')), emissive: new THREE.Color(VMX.cssVar('--c-accent-2')).multiplyScalar(0.25) }));
     s.scene.add(ball);
     const pts = Loss.path;
     const roll = { i: 0 };

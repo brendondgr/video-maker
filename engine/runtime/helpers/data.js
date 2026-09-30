@@ -25,7 +25,7 @@
   }
   H.color = function (i) {
     var list = ['--c-accent', '--c-accent-2', '--c-accent-3', '--c-warn', '--c-muted'];
-    return cssVar(list[i % list.length], '#5eb0ff');
+    return cssVar(list[i % list.length], '#d6d6d6');
   };
   H.cssVar = cssVar;
 
